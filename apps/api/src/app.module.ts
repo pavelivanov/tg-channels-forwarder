@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
-import { HealthModule } from './health/health.module.js';
-import { validate } from './env.schema.js';
+import { HealthModule } from './health/health.module.ts';
+import { PrismaModule } from './prisma/prisma.module.ts';
+import { validate } from './env.schema.ts';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { validate } from './env.schema.js';
             : undefined,
       },
     }),
+    PrismaModule,
     HealthModule,
   ],
 })

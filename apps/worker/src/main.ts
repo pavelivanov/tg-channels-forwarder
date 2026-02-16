@@ -1,6 +1,6 @@
 import pino from 'pino';
-import { loadConfig } from './config.js';
-import { startHealthServer } from './health.js';
+import { loadConfig } from './config.ts';
+import { startHealthServer } from './health.ts';
 
 const config = loadConfig();
 

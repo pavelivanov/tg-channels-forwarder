@@ -9,7 +9,8 @@ process.env['REDIS_URL'] = 'redis://localhost:6379';
 process.env['NODE_ENV'] = 'test';
 process.env['PORT'] = '0';
 
-const { AppModule } = await import('../src/app.module.js');
+const { AppModule } = await import('../src/app.module.ts');
+const { PrismaService } = await import('../src/prisma/prisma.service.ts');
 
 describe('Health endpoint', () => {
   let app: INestApplication;
@@ -17,7 +18,15 @@ describe('Health endpoint', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(PrismaService)
+      .useValue({
+        $runCommandRaw: async () => {
+          throw new Error('Use the mongodb provider');
+        },
+        $queryRawUnsafe: async () => [{ '?column?': 1 }],
+      })
+      .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();

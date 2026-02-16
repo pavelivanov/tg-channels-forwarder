@@ -3,6 +3,8 @@
 Auto-generated from all feature plans. Last updated: 2026-02-16
 
 ## Active Technologies
+- TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, Prisma ORM (latest v6), @prisma/clien (002-prisma-schema)
+- PostgreSQL 16 (via Docker Compose, already provisioned in 001-monorepo-scaffold) (002-prisma-schema)
 
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, @nestjs/terminus, nestjs-pino, pino, (001-monorepo-scaffold)
 
@@ -22,6 +24,7 @@ npm test && npm run lint
 TypeScript 5.x with `strict: true`, Node.js 20 LTS: Follow standard conventions
 
 ## Recent Changes
+- 002-prisma-schema: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, Prisma ORM (latest v6), @prisma/clien
 
 - 001-monorepo-scaffold: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, @nestjs/terminus, nestjs-pino, pino,
 

@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  telegramId BigInt  @unique
+  firstName String
+  lastName  String?
+  username  String?
+  photoUrl  String?
+  isPremium Boolean  @default(false)
+  maxLists  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptionLists SubscriptionList[]
+}
+
+model SourceChannel {
+  id           String   @id @default(uuid()) @db.Uuid
+  telegramId   BigInt   @unique
+  username     String?
+  title        String
+  isActive     Boolean  @default(true)
+  subscribedAt DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subscriptionListChannels SubscriptionListChannel[]
+}
+
+model SubscriptionList {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @db.Uuid
+  name                 String
+  destinationChannelId BigInt
+  destinationUsername  String?
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                    User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionListChannels SubscriptionListChannel[]
+
+  @@index([userId])
+}
+
+model SubscriptionListChannel {
+  id                 String @id @default(uuid()) @db.Uuid
+  subscriptionListId String @db.Uuid
+  sourceChannelId    String @db.Uuid
+
+  subscriptionList SubscriptionList @relation(fields: [subscriptionListId], references: [id], onDelete: Cascade)
+  sourceChannel    SourceChannel    @relation(fields: [sourceChannelId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionListId, sourceChannelId])
+}
