@@ -1,0 +1,28 @@
+{
+  "name": "@aggregator/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@aggregator/shared": "workspace:*",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@aggregator/eslint-config": "workspace:*",
+    "@aggregator/tsconfig": "workspace:*",
+    "@types/node": "^22.15.17",
+    "eslint": "^9.22.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

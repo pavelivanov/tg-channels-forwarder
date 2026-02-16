@@ -1,0 +1,10 @@
+{
+  "name": "@aggregator/mini-app",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'No build step required'",
+    "test": "echo 'No tests'",
+    "lint": "echo 'No lint'"
+  }
+}
