@@ -1,0 +1,18 @@
+{
+  "name": "@aggregator/root",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.29.3",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4"
+  }
+}

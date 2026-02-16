@@ -1,0 +1,24 @@
+{
+  "name": "@aggregator/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@aggregator/eslint-config": "workspace:*",
+    "@aggregator/tsconfig": "workspace:*",
+    "eslint": "^9.22.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}

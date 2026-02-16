@@ -1,0 +1,20 @@
+{
+  "name": "@aggregator/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./nestjs": "./nestjs.js"
+  },
+  "scripts": {
+    "build": "echo 'No build step required'",
+    "test": "echo 'No tests'",
+    "lint": "echo 'No lint'"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.22.0",
+    "eslint": "^9.22.0",
+    "typescript-eslint": "^8.27.0"
+  }
+}
