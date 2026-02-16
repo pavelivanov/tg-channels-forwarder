@@ -3,7 +3,7 @@ import {
   MAX_CHANNELS_PER_USER,
   DEFAULT_MAX_LISTS,
   DEDUP_TTL_HOURS,
-} from '../src/index.js';
+} from '../src/index.ts';
 
 describe('Shared constants', () => {
   it('MAX_CHANNELS_PER_USER is 30', () => {
