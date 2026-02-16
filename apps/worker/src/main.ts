@@ -6,9 +6,7 @@ const config = loadConfig();
 
 const logger = pino({
   transport:
-    config.NODE_ENV !== 'production'
-      ? { target: 'pino-pretty' }
-      : undefined,
+    config.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
 });
 
 logger.info({ env: config.NODE_ENV }, 'Worker starting');
