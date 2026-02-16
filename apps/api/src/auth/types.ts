@@ -28,6 +28,10 @@ export interface WebAppUser {
   photo_url?: string;
 }
 
+import { IsNotEmpty, IsString } from 'class-validator';
+
 export class ValidateInitDataDto {
+  @IsString()
+  @IsNotEmpty()
   initData!: string;
 }
