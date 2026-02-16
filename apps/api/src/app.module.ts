@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module.ts';
+import { ChannelsModule } from './channels/channels.module.ts';
 import { HealthModule } from './health/health.module.ts';
 import { PrismaModule } from './prisma/prisma.module.ts';
 import { validate } from './env.schema.ts';
@@ -22,6 +23,7 @@ import { validate } from './env.schema.ts';
     }),
     PrismaModule,
     AuthModule,
+    ChannelsModule,
     HealthModule,
   ],
 })
