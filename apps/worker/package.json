@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --project tsconfig.json",
+    "build": "prisma generate && tsc --project tsconfig.json",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "test": "vitest run",
@@ -12,15 +12,28 @@
   },
   "dependencies": {
     "@aggregator/shared": "workspace:*",
+    "@grammyjs/auto-retry": "^2.0.2",
+    "@prisma/adapter-pg": "^7.4.0",
+    "@prisma/client": "^7.4.0",
+    "bottleneck": "^2.19.5",
+    "bullmq": "^5.69.3",
+    "express": "^5.2.1",
+    "grammy": "^1.40.0",
+    "ioredis": "^5.9.2",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
+    "telegram": "^2.26.22",
     "zod": "^3.24.4"
   },
   "devDependencies": {
     "@aggregator/eslint-config": "workspace:*",
     "@aggregator/tsconfig": "workspace:*",
+    "@bull-board/api": "^6.18.2",
+    "@bull-board/express": "^6.18.2",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.15.17",
     "eslint": "^9.22.0",
+    "prisma": "^7.4.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"

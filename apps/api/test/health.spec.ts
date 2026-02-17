@@ -51,4 +51,19 @@ describe('Health endpoint', () => {
     const body = (await response.json()) as { status: string };
     expect(body.status).toBe('ok');
   });
+
+  it('GET /health includes redis status in details', async () => {
+    const address = app.getHttpServer().address();
+    const port = typeof address === 'object' ? address?.port : address;
+    const response = await fetch(`http://localhost:${port}/health`);
+
+    expect(response.status).toBe(200);
+
+    const body = (await response.json()) as {
+      status: string;
+      details: Record<string, { status: string }>;
+    };
+    expect(body.details).toHaveProperty('redis');
+    expect(body.details['redis']!.status).toBe('up');
+  });
 });

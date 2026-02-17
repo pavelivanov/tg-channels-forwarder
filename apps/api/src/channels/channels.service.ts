@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import type { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service.ts';
+import { CHANNEL_OPS_QUEUE } from './channel-ops.provider.ts';
 
 export interface ChannelResponse {
   id: string;
@@ -14,7 +16,10 @@ export interface ChannelResponse {
 export class ChannelsService {
   private readonly logger = new Logger(ChannelsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CHANNEL_OPS_QUEUE) @Optional() private readonly channelOpsQueue?: Queue,
+  ) {}
 
   async findAllActive(): Promise<ChannelResponse[]> {
     const channels = await this.prisma.sourceChannel.findMany({
@@ -65,6 +70,14 @@ export class ChannelsService {
       });
 
       this.logger.log(`New pending channel created: ${username}`);
+
+      if (this.channelOpsQueue) {
+        await this.channelOpsQueue.add('join', {
+          operation: 'join',
+          channelId: created.id,
+          username: created.username,
+        });
+      }
 
       return {
         channel: {
