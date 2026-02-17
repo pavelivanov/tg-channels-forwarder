@@ -8,3 +8,4 @@ onlyBuiltDependencies:
   - "@swc/core"
   - "@prisma/engines"
   - prisma
+  - msgpackr-extract
