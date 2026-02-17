@@ -26,6 +26,29 @@ describe('Worker startup', () => {
       return { default: createLogger };
     });
 
+    vi.doMock('ioredis', () => ({
+      Redis: class MockRedis {
+        options = {};
+        status = 'ready';
+        duplicate() { return new MockRedis(); }
+        disconnect() { return Promise.resolve(); }
+        quit() { return Promise.resolve(); }
+      },
+    }));
+
+    vi.doMock('bullmq', () => ({
+      Queue: class MockQueue {
+        constructor() {}
+        close() { return Promise.resolve(); }
+        getJobCounts() { return Promise.resolve({}); }
+      },
+      Worker: class MockWorker {
+        constructor() {}
+        on() { return this; }
+        close() { return Promise.resolve(); }
+      },
+    }));
+
     vi.doMock('../src/health.ts', () => ({
       startHealthServer: vi.fn(),
     }));
