@@ -12,7 +12,15 @@ export interface ForwardJob {
 
 export const QUEUE_NAME_FORWARD = 'message-forward';
 export const QUEUE_NAME_FORWARD_DLQ = 'message-forward-dlq';
+export const QUEUE_NAME_CHANNEL_OPS = 'channel-ops';
 export const QUEUE_MAX_ATTEMPTS = 3;
 export const QUEUE_BACKOFF_DELAY = 5000;
 export const QUEUE_KEEP_COMPLETED = 1000;
 export const QUEUE_KEEP_FAILED = 5000;
+
+export interface ChannelOpsJob {
+  operation: 'join' | 'leave';
+  channelId: string;
+  username?: string;
+  telegramId?: number;
+}

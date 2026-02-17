@@ -41,6 +41,7 @@ describe('Worker startup', () => {
         constructor() {}
         close() { return Promise.resolve(); }
         getJobCounts() { return Promise.resolve({}); }
+        add() { return Promise.resolve(); }
       },
       Worker: class MockWorker {
         constructor() {}
@@ -51,6 +52,75 @@ describe('Worker startup', () => {
 
     vi.doMock('../src/health.ts', () => ({
       startHealthServer: vi.fn(),
+    }));
+
+    vi.doMock('../src/config.ts', () => ({
+      loadConfig: () => ({
+        NODE_ENV: 'test',
+        REDIS_URL: 'redis://localhost:6379',
+        WORKER_HEALTH_PORT: 3001,
+        TELEGRAM_API_ID: 12345,
+        TELEGRAM_API_HASH: 'testhash',
+        TELEGRAM_SESSION: 'testsession',
+        DATABASE_URL: 'postgresql://localhost:5432/test',
+      }),
+    }));
+
+    vi.doMock('../src/prisma.ts', () => ({
+      getPrisma: () => ({
+        sourceChannel: {
+          findMany: vi.fn().mockResolvedValue([]),
+        },
+      }),
+      disconnectPrisma: vi.fn().mockResolvedValue(undefined),
+    }));
+
+    vi.doMock('../src/queue/queue-consumer.ts', () => ({
+      QueueConsumer: class MockQueueConsumer {
+        constructor() {}
+        close() { return Promise.resolve(); }
+      },
+    }));
+
+    vi.doMock('../src/queue/queue-producer.ts', () => ({
+      QueueProducer: class MockQueueProducer {
+        constructor() {}
+        enqueueMessage() { return Promise.resolve(); }
+      },
+    }));
+
+    vi.doMock('../src/listener/listener.service.ts', () => ({
+      ListenerService: class MockListenerService {
+        constructor() {}
+        start() { return Promise.resolve(); }
+        stop() { return Promise.resolve(); }
+        setAlbumGrouper() {}
+      },
+    }));
+
+    vi.doMock('../src/listener/album-grouper.ts', () => ({
+      AlbumGrouper: class MockAlbumGrouper {
+        constructor() {}
+        addMessage() {}
+        flush() {}
+        clear() {}
+      },
+    }));
+
+    vi.doMock('../src/listener/channel-manager.ts', () => ({
+      ChannelManager: class MockChannelManager {
+        constructor() {}
+        joinChannel() { return Promise.resolve({ telegramId: 1, title: 'test' }); }
+        leaveChannel() { return Promise.resolve(); }
+      },
+    }));
+
+    vi.doMock('../src/listener/channel-ops-consumer.ts', () => ({
+      ChannelOpsConsumer: class MockChannelOpsConsumer {
+        constructor() {}
+        startWorker() {}
+        close() { return Promise.resolve(); }
+      },
     }));
 
     await import('../src/main.ts');

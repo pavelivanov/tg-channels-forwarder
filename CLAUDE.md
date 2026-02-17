@@ -15,6 +15,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-16
 - Redis 7 (existing via Docker Compose) — ephemeral key-value with TTL, no PostgreSQL changes (006-redis-dedup-service)
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + BullMQ (queue/worker), ioredis (Redis client, already installed), express (dashboard mounting), @bull-board/api + @bull-board/express (dashboard UI) (007-bullmq-queue-setup)
 - Redis 7 (already provisioned via Docker Compose) (007-bullmq-queue-setup)
+- TypeScript 5.x with `strict: true`, Node.js 20 LTS + `telegram` (GramJS) ^2.26.22, BullMQ (existing), Prisma (existing), pino (existing) (008-telegram-listener)
+- PostgreSQL 16 via Prisma (existing SourceChannel model), Redis (existing, for BullMQ queues) (008-telegram-listener)
 
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, @nestjs/terminus, nestjs-pino, pino, (001-monorepo-scaffold)
 
