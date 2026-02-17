@@ -38,6 +38,7 @@ TypeScript 5.x with `strict: true`, Node.js 20 LTS: Follow standard conventions
 ## Recent Changes
 - 007-bullmq-queue-setup: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + BullMQ (queue/worker), ioredis (Redis client, already installed), express (dashboard mounting), @bull-board/api + @bull-board/express (dashboard UI)
 - 006-redis-dedup-service: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, ioredis, node:crypto (built-in) + ioredis (new), @nestjs/terminus (existing), pino (existing), @aggregator/shared (existing)
+- 005-subscription-lists-api: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, Prisma ORM v6, class-validator, class-transformer
 
 
 <!-- MANUAL ADDITIONS START -->
