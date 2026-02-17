@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module.ts';
 import { ChannelsModule } from './channels/channels.module.ts';
 import { HealthModule } from './health/health.module.ts';
 import { PrismaModule } from './prisma/prisma.module.ts';
+import { SubscriptionListsModule } from './subscription-lists/subscription-lists.module.ts';
 import { validate } from './env.schema.ts';
 
 @Module({
@@ -24,6 +25,7 @@ import { validate } from './env.schema.ts';
     PrismaModule,
     AuthModule,
     ChannelsModule,
+    SubscriptionListsModule,
     HealthModule,
   ],
 })
