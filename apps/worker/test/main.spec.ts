@@ -26,11 +26,11 @@ describe('Worker startup', () => {
       return { default: createLogger };
     });
 
-    vi.doMock('../src/health.js', () => ({
+    vi.doMock('../src/health.ts', () => ({
       startHealthServer: vi.fn(),
     }));
 
-    await import('../src/main.js');
+    await import('../src/main.ts');
 
     expect(logMessages.length).toBeGreaterThanOrEqual(1);
     const startupMsg = logMessages.find(

@@ -1,14 +1,12 @@
 import pino from 'pino';
-import { loadConfig } from './config.js';
-import { startHealthServer } from './health.js';
+import { loadConfig } from './config.ts';
+import { startHealthServer } from './health.ts';
 
 const config = loadConfig();
 
 const logger = pino({
   transport:
-    config.NODE_ENV !== 'production'
-      ? { target: 'pino-pretty' }
-      : undefined,
+    config.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
 });
 
 logger.info({ env: config.NODE_ENV }, 'Worker starting');
