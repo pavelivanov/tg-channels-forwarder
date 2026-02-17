@@ -13,6 +13,7 @@ process.env['JWT_SECRET'] = 'test-jwt-secret-at-least-32-characters-long!!';
 
 const { AppModule } = await import('../src/app.module.ts');
 const { PrismaService } = await import('../src/prisma/prisma.service.ts');
+const { BotService } = await import('../src/bot/bot.service.ts');
 
 describe('Health endpoint', () => {
   let app: INestApplication;
@@ -28,6 +29,8 @@ describe('Health endpoint', () => {
         },
         $queryRawUnsafe: async () => [{ '?column?': 1 }],
       })
+      .overrideProvider(BotService)
+      .useValue({ verifyBotAdmin: async () => true, onModuleInit: async () => {} })
       .compile();
 
     app = moduleRef.createNestApplication();

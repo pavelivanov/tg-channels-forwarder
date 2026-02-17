@@ -40,7 +40,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
       this.logger.warn({ statusCode: status, error }, message);
 
-      response.status(status).json({ statusCode: status, error, message });
+      const body: Record<string, unknown> = { statusCode: status, error, message };
+
+      if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+        const resp = exceptionResponse as Record<string, unknown>;
+        if (typeof resp['errorCode'] === 'string') {
+          body['errorCode'] = resp['errorCode'];
+        }
+      }
+
+      response.status(status).json(body);
     } else {
       this.logger.error(
         exception instanceof Error ? exception.stack : String(exception),

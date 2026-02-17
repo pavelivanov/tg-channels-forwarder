@@ -1,0 +1,128 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { ServiceUnavailableException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { GrammyError } from 'grammy';
+
+const mockGetChatMember = vi.fn();
+const mockGetMe = vi
+  .fn()
+  .mockResolvedValue({ id: 123, is_bot: true, first_name: 'TestBot' });
+
+vi.mock('grammy', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('grammy')>();
+  return {
+    ...actual,
+    Api: vi.fn().mockImplementation(() => ({
+      getChatMember: mockGetChatMember,
+      getMe: mockGetMe,
+    })),
+  };
+});
+
+import { BotService } from '../src/bot/bot.service.ts';
+
+const mockUser = { id: 123, is_bot: true, first_name: 'Bot' };
+
+describe('BotService', () => {
+  let service: BotService;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    mockGetMe.mockResolvedValue({
+      id: 123,
+      is_bot: true,
+      first_name: 'TestBot',
+    });
+
+    const mockConfig = {
+      get: vi.fn().mockReturnValue('test-token'),
+    };
+
+    service = new BotService(mockConfig as unknown as ConfigService);
+    await service.onModuleInit();
+  });
+
+  it('verifyBotAdmin returns true when bot is administrator', async () => {
+    mockGetChatMember.mockResolvedValue({
+      status: 'administrator',
+      user: mockUser,
+    });
+
+    const result = await service.verifyBotAdmin(-1001234567890);
+
+    expect(result).toBe(true);
+    expect(mockGetChatMember).toHaveBeenCalledWith(
+      -1001234567890,
+      123,
+      expect.any(AbortSignal),
+    );
+  });
+
+  it('verifyBotAdmin returns true when bot is creator', async () => {
+    mockGetChatMember.mockResolvedValue({
+      status: 'creator',
+      user: mockUser,
+    });
+
+    const result = await service.verifyBotAdmin(-1001234567890);
+
+    expect(result).toBe(true);
+  });
+
+  it('verifyBotAdmin returns false when bot is regular member', async () => {
+    mockGetChatMember.mockResolvedValue({
+      status: 'member',
+      user: mockUser,
+    });
+
+    const result = await service.verifyBotAdmin(-1001234567890);
+
+    expect(result).toBe(false);
+  });
+
+  it('verifyBotAdmin returns false when channel does not exist', async () => {
+    mockGetChatMember.mockRejectedValue(
+      new GrammyError(
+        'Bad Request: chat not found',
+        {
+          ok: false,
+          error_code: 400,
+          description: 'Bad Request: chat not found',
+        },
+        'getChatMember',
+        { chat_id: -1001234, user_id: 123 },
+      ),
+    );
+
+    const result = await service.verifyBotAdmin(-1001234);
+
+    expect(result).toBe(false);
+  });
+
+  it('verifyBotAdmin returns false when bot is kicked/banned', async () => {
+    mockGetChatMember.mockRejectedValue(
+      new GrammyError(
+        'Forbidden: bot was kicked from the supergroup chat',
+        {
+          ok: false,
+          error_code: 403,
+          description: 'Forbidden: bot was kicked from the supergroup chat',
+        },
+        'getChatMember',
+        { chat_id: -1001234567890, user_id: 123 },
+      ),
+    );
+
+    const result = await service.verifyBotAdmin(-1001234567890);
+
+    expect(result).toBe(false);
+  });
+
+  it('verifyBotAdmin throws ServiceUnavailableException on network error', async () => {
+    mockGetChatMember.mockRejectedValue(new Error('Network error'));
+
+    await expect(service.verifyBotAdmin(-1001234567890)).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+  });
+});

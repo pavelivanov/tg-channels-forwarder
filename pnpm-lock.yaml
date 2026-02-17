@@ -53,6 +53,9 @@ importers:
       class-validator:
         specifier: ^0.14.3
         version: 0.14.3
+      grammy:
+        specifier: ^1.40.0
+        version: 1.40.0
       ioredis:
         specifier: ^5.9.3
         version: 5.9.3

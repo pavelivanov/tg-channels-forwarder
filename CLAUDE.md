@@ -19,6 +19,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-16
 - PostgreSQL 16 via Prisma (existing SourceChannel model), Redis (existing, for BullMQ queues) (008-telegram-listener)
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + `grammy` (Telegram Bot API), `@grammyjs/auto-retry` (429 handling), `bottleneck` (rate limiting), BullMQ (existing), Prisma (existing), ioredis (existing), pino (existing) (009-forwarder-service)
 - PostgreSQL 16 via Prisma (existing schema, no migrations), Redis (existing, for dedup + BullMQ) (009-forwarder-service)
+- TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10 + grammY (Bot API client), @nestjs/common, @nestjs/config, Prisma ORM v6 (010-bot-admin-verification)
+- PostgreSQL 16 via Prisma (no schema changes) (010-bot-admin-verification)
 
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, @nestjs/terminus, nestjs-pino, pino, (001-monorepo-scaffold)
 
@@ -38,9 +40,9 @@ npm test && npm run lint
 TypeScript 5.x with `strict: true`, Node.js 20 LTS: Follow standard conventions
 
 ## Recent Changes
+- 010-bot-admin-verification: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10 + grammY (Bot API client), @nestjs/common, @nestjs/config, Prisma ORM v6
 - 009-forwarder-service: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + `grammy` (Telegram Bot API), `@grammyjs/auto-retry` (429 handling), `bottleneck` (rate limiting), BullMQ (existing), Prisma (existing), ioredis (existing), pino (existing)
 - 007-bullmq-queue-setup: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + BullMQ (queue/worker), ioredis (Redis client, already installed), express (dashboard mounting), @bull-board/api + @bull-board/express (dashboard UI)
-- 006-redis-dedup-service: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, ioredis, node:crypto (built-in) + ioredis (new), @nestjs/terminus (existing), pino (existing), @aggregator/shared (existing)
 
 
 <!-- MANUAL ADDITIONS START -->
