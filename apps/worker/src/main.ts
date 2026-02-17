@@ -1,6 +1,8 @@
 import pino from 'pino';
 import { Redis } from 'ioredis';
 import { Queue } from 'bullmq';
+import { Api } from 'grammy';
+import { autoRetry } from '@grammyjs/auto-retry';
 import { loadConfig } from './config.ts';
 import { startHealthServer } from './health.ts';
 import { QueueConsumer } from './queue/queue-consumer.ts';
@@ -9,6 +11,10 @@ import { ListenerService } from './listener/listener.service.ts';
 import { AlbumGrouper } from './listener/album-grouper.ts';
 import { ChannelManager } from './listener/channel-manager.ts';
 import { ChannelOpsConsumer } from './listener/channel-ops-consumer.ts';
+import { DedupService } from './dedup/dedup.service.ts';
+import { MessageSender } from './forwarder/message-sender.ts';
+import { RateLimiterService } from './forwarder/rate-limiter.service.ts';
+import { ForwarderService } from './forwarder/forwarder.service.ts';
 import { getPrisma, disconnectPrisma } from './prisma.ts';
 import {
   QUEUE_NAME_FORWARD,
@@ -46,14 +52,30 @@ const forwardQueue = new Queue(QUEUE_NAME_FORWARD, {
 
 const dlq = new Queue(QUEUE_NAME_FORWARD_DLQ, { connection });
 
+// grammY Bot API (send-only, no polling)
+const api = new Api(config.BOT_TOKEN);
+api.config.use(autoRetry());
+
+// Forwarder service
+const prisma = getPrisma();
+const dedupService = new DedupService(connection, logger);
+const messageSender = new MessageSender(api, logger);
+const rateLimiterService = new RateLimiterService(logger);
+const forwarderService = new ForwarderService(
+  messageSender,
+  prisma,
+  dedupService,
+  rateLimiterService,
+  logger,
+);
+
 // Consumer (starts processing in constructor)
-new QueueConsumer(QUEUE_NAME_FORWARD, dlq, connection, logger);
+new QueueConsumer(QUEUE_NAME_FORWARD, dlq, connection, forwarderService, logger);
 
 // Queue producer for the listener
 const queueProducer = new QueueProducer(forwardQueue, logger);
 
 // Telegram Listener
-const prisma = getPrisma();
 const listener = new ListenerService(
   {
     apiId: config.TELEGRAM_API_ID,
@@ -90,6 +112,7 @@ listener.start().catch((err) => {
 const shutdown = async () => {
   logger.info('Shutting down...');
   await listener.stop();
+  await rateLimiterService.close();
   await disconnectPrisma();
   process.exit(0);
 };

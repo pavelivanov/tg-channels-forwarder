@@ -2,6 +2,7 @@ import { Worker, type Queue, type Job } from 'bullmq';
 import type { Redis } from 'ioredis';
 import type pino from 'pino';
 import type { ForwardJob } from '@aggregator/shared';
+import type { ForwarderService } from '../forwarder/forwarder.service.ts';
 
 export class QueueConsumer {
   private worker: Worker;
@@ -11,6 +12,7 @@ export class QueueConsumer {
     queueName: string,
     private readonly dlq: Queue,
     connection: Redis,
+    private readonly forwarderService: ForwarderService,
     logger: pino.Logger,
   ) {
     this.logger = logger.child({ service: 'QueueConsumer' });
@@ -22,7 +24,7 @@ export class QueueConsumer {
           { jobId: job.id, data: job.data },
           'Processing forward job',
         );
-        // Actual forwarding logic comes in Spec 09
+        await this.forwarderService.forward(job.data);
       },
       { connection },
     );
