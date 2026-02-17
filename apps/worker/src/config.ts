@@ -10,6 +10,7 @@ const envSchema = z.object({
   TELEGRAM_API_HASH: z.string().min(1),
   TELEGRAM_SESSION: z.string().min(1),
   DATABASE_URL: z.string().url(),
+  BOT_TOKEN: z.string().min(1),
 });
 
 export type WorkerConfig = z.infer<typeof envSchema>;

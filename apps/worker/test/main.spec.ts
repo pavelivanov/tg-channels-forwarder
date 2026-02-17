@@ -54,6 +54,16 @@ describe('Worker startup', () => {
       startHealthServer: vi.fn(),
     }));
 
+    vi.doMock('grammy', () => ({
+      Api: class MockApi {
+        config = { use: vi.fn() };
+      },
+    }));
+
+    vi.doMock('@grammyjs/auto-retry', () => ({
+      autoRetry: () => vi.fn(),
+    }));
+
     vi.doMock('../src/config.ts', () => ({
       loadConfig: () => ({
         NODE_ENV: 'test',
@@ -63,6 +73,7 @@ describe('Worker startup', () => {
         TELEGRAM_API_HASH: 'testhash',
         TELEGRAM_SESSION: 'testsession',
         DATABASE_URL: 'postgresql://localhost:5432/test',
+        BOT_TOKEN: 'test-bot-token',
       }),
     }));
 
@@ -120,6 +131,36 @@ describe('Worker startup', () => {
         constructor() {}
         startWorker() {}
         close() { return Promise.resolve(); }
+      },
+    }));
+
+    vi.doMock('../src/dedup/dedup.service.ts', () => ({
+      DedupService: class MockDedupService {
+        constructor() {}
+        isDuplicate() { return Promise.resolve(false); }
+        markAsForwarded() { return Promise.resolve(); }
+      },
+    }));
+
+    vi.doMock('../src/forwarder/message-sender.ts', () => ({
+      MessageSender: class MockMessageSender {
+        constructor() {}
+        send() { return Promise.resolve(); }
+      },
+    }));
+
+    vi.doMock('../src/forwarder/rate-limiter.service.ts', () => ({
+      RateLimiterService: class MockRateLimiterService {
+        constructor() {}
+        execute(_id: number, fn: () => Promise<unknown>) { return fn(); }
+        close() { return Promise.resolve(); }
+      },
+    }));
+
+    vi.doMock('../src/forwarder/forwarder.service.ts', () => ({
+      ForwarderService: class MockForwarderService {
+        constructor() {}
+        forward() { return Promise.resolve(); }
       },
     }));
 

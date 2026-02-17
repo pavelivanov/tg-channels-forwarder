@@ -1,8 +1,20 @@
+export interface TelegramEntity {
+  type: string;
+  offset: number;
+  length: number;
+  url?: string;
+  user?: { id: number };
+  language?: string;
+  custom_emoji_id?: string;
+}
+
 export interface ForwardJob {
   messageId: number;
   sourceChannelId: number;
   text?: string;
   caption?: string;
+  entities?: TelegramEntity[];
+  captionEntities?: TelegramEntity[];
   mediaType?: string;
   mediaFileId?: string;
   mediaGroupId?: string;
