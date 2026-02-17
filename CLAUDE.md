@@ -35,6 +35,7 @@ TypeScript 5.x with `strict: true`, Node.js 20 LTS: Follow standard conventions
 - 006-redis-dedup-service: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, ioredis, node:crypto (built-in) + ioredis (new), @nestjs/terminus (existing), pino (existing), @aggregator/shared (existing)
 - 005-subscription-lists-api: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, Prisma ORM v6, class-validator, class-transformer
 - 004-channels-api: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, Prisma ORM v6+, `class-validator`, `class-transformer`
+- 003-telegram-jwt-auth: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, @nestjs/jwt, @nestjs/config, Prisma ORM v6, node:crypto (built-in)
 
 
 <!-- MANUAL ADDITIONS START -->
