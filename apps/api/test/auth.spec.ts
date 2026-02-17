@@ -18,6 +18,7 @@ process.env['BOT_TOKEN'] = BOT_TOKEN;
 process.env['JWT_SECRET'] = JWT_SECRET;
 
 const { AppModule } = await import('../src/app.module.ts');
+const { BotService } = await import('../src/bot/bot.service.ts');
 
 // Test-only protected controller (no @Public() decorator)
 @Controller('test-protected')
@@ -100,7 +101,10 @@ describe('Auth (POST /auth/validate)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule, TestModule],
-    }).compile();
+    })
+      .overrideProvider(BotService)
+      .useValue({ verifyBotAdmin: async () => true, onModuleInit: async () => {} })
+      .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();

@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { AllExceptionsFilter } from '../src/filters/http-exception.filter.ts';
 import { PrismaService } from '../src/prisma/prisma.service.ts';
+import { BotService } from '../src/bot/bot.service.ts';
 
 const BOT_TOKEN = 'test-bot-token-for-local-development';
 const JWT_SECRET = 'test-jwt-secret-at-least-32-characters-long!!';
@@ -90,7 +91,10 @@ describe('Channels API', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(BotService)
+      .useValue({ verifyBotAdmin: async () => true, onModuleInit: async () => {} })
+      .compile();
 
     app = moduleRef.createNestApplication();
     app.useGlobalPipes(

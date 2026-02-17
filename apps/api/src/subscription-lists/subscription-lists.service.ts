@@ -5,6 +5,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { BotNotAdminException } from '../bot/bot-not-admin.exception.ts';
+import { BotService } from '../bot/bot.service.ts';
 import { PrismaService } from '../prisma/prisma.service.ts';
 import type { CreateSubscriptionListDto } from './dto/create-subscription-list.dto.ts';
 import type { UpdateSubscriptionListDto } from './dto/update-subscription-list.dto.ts';
@@ -30,7 +32,10 @@ const SOURCE_CHANNEL_LIMIT = 30;
 export class SubscriptionListsService {
   private readonly logger = new Logger(SubscriptionListsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly botService: BotService,
+  ) {}
 
   // --- Shared foundational methods (T005–T009) ---
 
@@ -147,6 +152,12 @@ export class SubscriptionListsService {
     userId: string,
     dto: CreateSubscriptionListDto,
   ): Promise<SubscriptionListResponse> {
+    // Verify bot is admin in destination channel
+    const isAdmin = await this.botService.verifyBotAdmin(dto.destinationChannelId);
+    if (!isAdmin) {
+      throw new BotNotAdminException();
+    }
+
     // Check list limit
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
@@ -210,6 +221,14 @@ export class SubscriptionListsService {
       throw new BadRequestException(
         'Request body must contain at least one updatable field',
       );
+    }
+
+    // Verify bot is admin in new destination channel (FR-002, FR-003)
+    if (hasDestId) {
+      const isAdmin = await this.botService.verifyBotAdmin(dto.destinationChannelId!);
+      if (!isAdmin) {
+        throw new BotNotAdminException();
+      }
     }
 
     // Ownership + active check

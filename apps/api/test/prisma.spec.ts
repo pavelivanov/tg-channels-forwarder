@@ -200,10 +200,14 @@ describe('Prisma schema', () => {
       process.env['JWT_SECRET'] = 'test-jwt-secret-at-least-32-characters-long!!';
 
       const { AppModule } = await import('../src/app.module.ts');
+      const { BotService } = await import('../src/bot/bot.service.ts');
 
       const moduleRef = await Test.createTestingModule({
         imports: [AppModule],
-      }).compile();
+      })
+        .overrideProvider(BotService)
+        .useValue({ verifyBotAdmin: async () => true, onModuleInit: async () => {} })
+        .compile();
 
       const app = moduleRef.createNestApplication();
       await app.init();
