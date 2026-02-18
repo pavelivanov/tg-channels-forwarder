@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
+import { join } from 'node:path';
 import { Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { LoggerModule } from 'nestjs-pino';
 import { LOG_REDACT_PATHS } from '@aggregator/shared';
 import { AuthModule } from './auth/auth.module.ts';
@@ -32,6 +34,12 @@ import { validate } from './env.schema.ts';
             : undefined,
       },
       exclude: [{ method: RequestMethod.ALL, path: 'health' }],
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'mini-app', 'dist'),
+      serveRoot: '/app',
+      serveStaticOptions: { index: false },
+      renderPath: '/app*',
     }),
     PrismaModule,
     AuthModule,

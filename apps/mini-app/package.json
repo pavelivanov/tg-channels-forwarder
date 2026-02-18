@@ -2,9 +2,34 @@
   "name": "@aggregator/mini-app",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "echo 'No build step required'",
-    "test": "echo 'No tests'",
-    "lint": "echo 'No lint'"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-router-dom": "7.6.1",
+    "@twa-dev/sdk": "8.0.2"
+  },
+  "devDependencies": {
+    "@aggregator/eslint-config": "workspace:*",
+    "@aggregator/tsconfig": "workspace:*",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "22.15.17",
+    "@types/react": "19.1.2",
+    "@types/react-dom": "19.1.2",
+    "@vitejs/plugin-react": "4.4.1",
+    "eslint": "9.22.0",
+    "jsdom": "26.0.0",
+    "typescript": "5.8.3",
+    "vite": "6.3.5",
+    "vitest": "3.1.4"
   }
 }
