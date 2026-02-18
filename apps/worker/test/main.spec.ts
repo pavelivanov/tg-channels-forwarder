@@ -107,6 +107,7 @@ describe('Worker startup', () => {
         start() { return Promise.resolve(); }
         stop() { return Promise.resolve(); }
         setAlbumGrouper() {}
+        isConnected() { return true; }
       },
     }));
 

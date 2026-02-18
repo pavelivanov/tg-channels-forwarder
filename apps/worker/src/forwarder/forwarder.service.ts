@@ -19,7 +19,10 @@ export class ForwarderService {
   }
 
   async forward(job: ForwardJob): Promise<void> {
-    const { messageId, sourceChannelId } = job;
+    const { messageId, sourceChannelId, correlationId } = job;
+    const fwdLogger = correlationId
+      ? this.logger.child({ correlationId })
+      : this.logger;
     const text = job.text ?? job.caption ?? '';
 
     const lists = await this.prisma.subscriptionList.findMany({
@@ -41,14 +44,14 @@ export class ForwarderService {
     ];
 
     if (uniqueDestinations.length === 0) {
-      this.logger.debug({ sourceChannelId, messageId }, 'no_destinations');
+      fwdLogger.debug({ sourceChannelId, messageId }, 'no_destinations');
       return;
     }
 
     for (const destinationChannelId of uniqueDestinations) {
       const isDup = await this.dedupService.isDuplicate(destinationChannelId, text);
       if (isDup) {
-        this.logger.info(
+        fwdLogger.info(
           { sourceChannelId, destinationChannelId, messageId },
           'message_deduplicated',
         );
@@ -60,7 +63,7 @@ export class ForwarderService {
       });
 
       await this.dedupService.markAsForwarded(destinationChannelId, text);
-      this.logger.info(
+      fwdLogger.info(
         { sourceChannelId, destinationChannelId, messageId, mediaType: job.mediaType },
         'message_forwarded',
       );

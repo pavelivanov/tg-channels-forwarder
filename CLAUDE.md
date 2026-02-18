@@ -23,6 +23,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-16
 - PostgreSQL 16 via Prisma (no schema changes) (010-bot-admin-verification)
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + BullMQ (existing), Prisma ORM v6 (existing), pino (existing), `ChannelManager` (existing) (011-channel-cleanup)
 - PostgreSQL 16 via Prisma (add `lastReferencedAt` field to SourceChannel) (011-channel-cleanup)
+- TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, nestjs-pino 4.x, pino 9.x, pino-http 10.x, @nestjs/terminus 10.x, grammY, GramJS (telegram), BullMQ, Prisma ORM v6 (012-logging-health-check)
+- PostgreSQL 16 (existing), Redis (existing) (012-logging-health-check)
 
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, @nestjs/terminus, nestjs-pino, pino, (001-monorepo-scaffold)
 
@@ -42,9 +44,9 @@ npm test && npm run lint
 TypeScript 5.x with `strict: true`, Node.js 20 LTS: Follow standard conventions
 
 ## Recent Changes
+- 012-logging-health-check: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, nestjs-pino 4.x, pino 9.x, pino-http 10.x, @nestjs/terminus 10.x, grammY, GramJS (telegram), BullMQ, Prisma ORM v6
 - 011-channel-cleanup: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + BullMQ (existing), Prisma ORM v6 (existing), pino (existing), `ChannelManager` (existing)
 - 010-bot-admin-verification: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10 + grammY (Bot API client), @nestjs/common, @nestjs/config, Prisma ORM v6
-- 009-forwarder-service: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + `grammy` (Telegram Bot API), `@grammyjs/auto-retry` (429 handling), `bottleneck` (rate limiting), BullMQ (existing), Prisma (existing), ioredis (existing), pino (existing)
 
 
 <!-- MANUAL ADDITIONS START -->

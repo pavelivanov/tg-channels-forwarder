@@ -206,7 +206,7 @@ describe('Prisma schema', () => {
         imports: [AppModule],
       })
         .overrideProvider(BotService)
-        .useValue({ verifyBotAdmin: async () => true, onModuleInit: async () => {} })
+        .useValue({ verifyBotAdmin: async () => true, onModuleInit: async () => {}, isHealthy: async () => true })
         .compile();
 
       const app = moduleRef.createNestApplication();
@@ -218,12 +218,12 @@ describe('Prisma schema', () => {
       const response = await fetch(`http://localhost:${port}/health`);
       const body = (await response.json()) as {
         status: string;
-        info: { database: { status: string } };
+        checks: { postgres: { status: string } };
       };
 
       expect(response.status).toBe(200);
-      expect(body.status).toBe('ok');
-      expect(body.info.database.status).toBe('up');
+      expect(body.status).toBe('healthy');
+      expect(body.checks.postgres.status).toBe('up');
 
       await app.close();
     });

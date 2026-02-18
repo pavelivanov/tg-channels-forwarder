@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { TelegramClient, Api, sessions } from 'telegram';
 import { NewMessage, type NewMessageEvent } from 'telegram/events/index.js';
 import type { PrismaClient } from '../generated/prisma/client.ts';
@@ -77,6 +78,10 @@ export class ListenerService {
     this.logger.info('Listener stopped');
   }
 
+  isConnected(): boolean {
+    return this.client?.connected ?? false;
+  }
+
   getClient(): TelegramClient {
     return this.client;
   }
@@ -135,12 +140,15 @@ export class ListenerService {
       }
     }
 
+    const correlationId = crypto.randomUUID();
+
     this.logger.debug(
-      { channelId, messageId: message.id },
+      { channelId, messageId: message.id, correlationId },
       'message_received',
     );
 
     const job = extractForwardJob(message);
+    job.correlationId = correlationId;
 
     if (job.mediaGroupId && this.albumGrouper) {
       this.albumGrouper.addMessage(job);

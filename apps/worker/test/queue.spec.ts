@@ -362,20 +362,35 @@ describe('Queue Integration Tests', () => {
     let healthPort: number;
     let healthQueue: Queue;
     let healthDlq: Queue;
+    let cleanupQueue: Queue;
+    let originalNodeEnv: string | undefined;
 
     beforeEach(async () => {
+      originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
       healthQueue = new Queue(`${TEST_QUEUE_NAME}-health`, { connection });
       healthDlq = new Queue(`${TEST_DLQ_NAME}-health`, { connection });
+      cleanupQueue = new Queue(`${TEST_QUEUE_NAME}-cleanup`, { connection });
       await healthQueue.obliterate({ force: true });
       await healthDlq.obliterate({ force: true });
+
+      const mockLogger = { info: () => {}, error: () => {}, warn: () => {}, debug: () => {}, child: () => mockLogger } as never;
 
       // Use port 0 to get a random available port
       healthPort = 0;
       healthServer = startHealthServer(
         healthPort,
-        { info: () => {}, error: () => {}, warn: () => {}, debug: () => {}, child: () => ({}) } as never,
-        healthQueue,
-        healthDlq,
+        mockLogger,
+        {
+          prisma: { $queryRaw: async () => [{ '?column?': 1 }] } as never,
+          redis: { ping: async () => 'PONG' } as never,
+          listener: { isConnected: () => true } as never,
+          api: { getMe: async () => ({ id: 1 }) } as never,
+          forwardQueue: healthQueue,
+          dlq: healthDlq,
+          cleanupQueue,
+        },
       );
       await new Promise<void>((r) => healthServer.on('listening', r));
       const addr = healthServer.address();
@@ -383,6 +398,7 @@ describe('Queue Integration Tests', () => {
     });
 
     afterEach(async () => {
+      process.env.NODE_ENV = originalNodeEnv;
       await new Promise<void>((resolve, reject) => {
         healthServer.close((err) => (err ? reject(err) : resolve()));
       });
@@ -390,28 +406,28 @@ describe('Queue Integration Tests', () => {
       await healthQueue.close();
       await healthDlq.obliterate({ force: true });
       await healthDlq.close();
+      await cleanupQueue.close();
     });
 
     it('returns queue stats with all zeroes when queue is empty', async () => {
       const res = await fetch(`http://localhost:${healthPort}/`);
-      const body = await res.json();
+      const body = (await res.json()) as { status: string; checks: { queue: Record<string, number> } };
 
-      expect(body.status).toBe('ok');
-      expect(body.queue).toBeDefined();
-      expect(body.queue.active).toBe(0);
-      expect(body.queue.waiting).toBe(0);
-      expect(body.queue.failed).toBe(0);
-      expect(body.queue.delayed).toBe(0);
-      expect(body.queue.dlq).toBe(0);
+      expect(body.status).toBe('healthy');
+      expect(body.checks.queue).toBeDefined();
+      expect(body.checks.queue.active).toBe(0);
+      expect(body.checks.queue.waiting).toBe(0);
+      expect(body.checks.queue.failed).toBe(0);
+      expect(body.checks.queue.dlq).toBe(0);
     });
 
     it('waiting count increases after enqueuing a job', async () => {
       await healthQueue.add('forward', makeJob());
 
       const res = await fetch(`http://localhost:${healthPort}/`);
-      const body = await res.json();
+      const body = (await res.json()) as { checks: { queue: Record<string, number> } };
 
-      expect(body.queue.waiting + body.queue.active).toBeGreaterThanOrEqual(1);
+      expect(body.checks.queue.waiting + body.checks.queue.active).toBeGreaterThanOrEqual(1);
     });
   });
 });

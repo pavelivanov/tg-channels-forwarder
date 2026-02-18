@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Api, GrammyError } from 'grammy';
+import { HEALTH_CHECK_TIMEOUT_MS } from '@aggregator/shared';
 
 @Injectable()
 export class BotService implements OnModuleInit {
@@ -22,6 +23,20 @@ export class BotService implements OnModuleInit {
     const me = await this.api.getMe();
     this.botUserId = me.id;
     this.logger.log(`Bot initialized: @${me.username} (${me.id})`);
+  }
+
+  async isHealthy(): Promise<boolean> {
+    try {
+      await Promise.race([
+        this.api.getMe(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Bot health check timeout')), HEALTH_CHECK_TIMEOUT_MS),
+        ),
+      ]);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async verifyBotAdmin(channelId: number): Promise<boolean> {

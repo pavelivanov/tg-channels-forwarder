@@ -11,6 +11,9 @@ const envSchema = z.object({
   TELEGRAM_SESSION: z.string().min(1),
   DATABASE_URL: z.string().url(),
   BOT_TOKEN: z.string().min(1),
+  LOG_LEVEL: z
+    .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal'])
+    .optional(),
 });
 
 export type WorkerConfig = z.infer<typeof envSchema>;

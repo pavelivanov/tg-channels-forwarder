@@ -9,6 +9,9 @@ export const envSchema = z.object({
   REDIS_URL: z.string().url(),
   BOT_TOKEN: z.string().min(1),
   JWT_SECRET: z.string().min(32),
+  LOG_LEVEL: z
+    .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal'])
+    .optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

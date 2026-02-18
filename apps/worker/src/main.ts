@@ -26,11 +26,16 @@ import {
   QUEUE_BACKOFF_DELAY,
   QUEUE_KEEP_COMPLETED,
   QUEUE_KEEP_FAILED,
+  LOG_REDACT_PATHS,
 } from '@aggregator/shared';
 
 const config = loadConfig();
 
 const logger = pino({
+  level:
+    config.LOG_LEVEL ??
+    (config.NODE_ENV !== 'production' ? 'debug' : 'info'),
+  redact: LOG_REDACT_PATHS,
   transport:
     config.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
 });
@@ -135,6 +140,14 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 // Health
-startHealthServer(config.WORKER_HEALTH_PORT, logger, forwardQueue, dlq, cleanupQueue);
+startHealthServer(config.WORKER_HEALTH_PORT, logger, {
+  prisma,
+  redis: connection,
+  listener,
+  api,
+  forwardQueue,
+  dlq,
+  cleanupQueue,
+});
 
 logger.info('Worker started successfully');
