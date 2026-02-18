@@ -20,11 +20,15 @@ export class QueueConsumer {
     this.worker = new Worker<ForwardJob>(
       queueName,
       async (job: Job<ForwardJob>) => {
-        this.logger.info(
+        const jobLogger = job.data.correlationId
+          ? this.logger.child({ correlationId: job.data.correlationId })
+          : this.logger;
+        jobLogger.info(
           { jobId: job.id, data: job.data },
-          'Processing forward job',
+          'job_received',
         );
         await this.forwarderService.forward(job.data);
+        jobLogger.info({ jobId: job.id }, 'job_completed');
       },
       { connection },
     );
@@ -35,10 +39,13 @@ export class QueueConsumer {
 
     this.worker.on('failed', async (job, error) => {
       if (!job) return;
+      const jobLogger = job.data.correlationId
+        ? this.logger.child({ correlationId: job.data.correlationId })
+        : this.logger;
       if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
-        this.logger.warn(
+        jobLogger.warn(
           { jobId: job.id, error: error.message, attempts: job.attemptsMade },
-          'Job exhausted retries, moving to DLQ',
+          'job_failed',
         );
         await this.dlq.add('dead-letter', {
           originalJobId: job.id,

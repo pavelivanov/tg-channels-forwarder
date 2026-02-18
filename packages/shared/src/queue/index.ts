@@ -20,6 +20,7 @@ export interface ForwardJob {
   mediaGroupId?: string;
   mediaGroup?: ForwardJob[];
   timestamp: number;
+  correlationId?: string;
 }
 
 export const QUEUE_NAME_FORWARD = 'message-forward';

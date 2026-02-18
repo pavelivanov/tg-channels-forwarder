@@ -1,54 +1,124 @@
 import { createServer, type Server } from 'node:http';
 import type { Logger } from 'pino';
 import type { Queue } from 'bullmq';
+import type { PrismaClient } from './generated/prisma/client.ts';
+import type { Redis } from 'ioredis';
+import type { ListenerService } from './listener/listener.service.ts';
+import type { Api } from 'grammy';
 import express from 'express';
+import { Prisma } from './generated/prisma/client.ts';
 import { createDashboard } from './dashboard.ts';
+import {
+  HEALTH_CHECK_TIMEOUT_MS,
+  computeHealthStatus,
+  type HealthResponse,
+  type ServiceCheck,
+  type ConnectionCheck,
+  type QueueCheck,
+} from '@aggregator/shared';
+
+export interface HealthContext {
+  prisma: PrismaClient;
+  redis: Redis;
+  listener: ListenerService;
+  api: Api;
+  forwardQueue: Queue;
+  dlq: Queue;
+  cleanupQueue: Queue;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Health check timeout')), ms),
+    ),
+  ]);
+}
 
 export function startHealthServer(
   port: number,
   logger: Logger,
-  queue?: Queue,
-  dlq?: Queue,
-  cleanupQueue?: Queue,
+  ctx: HealthContext,
 ): Server {
-  const healthHandler = async (): Promise<string> => {
-    const response: Record<string, unknown> = { status: 'ok' };
+  const healthHandler = async (): Promise<HealthResponse> => {
+    const uptime = process.uptime() * 1000;
+    const checks: Record<string, ServiceCheck | ConnectionCheck | QueueCheck> = {};
 
-    if (queue && dlq) {
-      const counts = await queue.getJobCounts(
+    try {
+      // Postgres check
+      const pgStart = Date.now();
+      try {
+        await withTimeout(
+          ctx.prisma.$queryRaw(Prisma.sql`SELECT 1`),
+          HEALTH_CHECK_TIMEOUT_MS,
+        );
+        checks['postgres'] = { status: 'up', latencyMs: Date.now() - pgStart };
+      } catch {
+        checks['postgres'] = { status: 'down', latencyMs: Date.now() - pgStart };
+      }
+
+      // Redis check
+      const redisStart = Date.now();
+      try {
+        await withTimeout(ctx.redis.ping(), HEALTH_CHECK_TIMEOUT_MS);
+        checks['redis'] = { status: 'up', latencyMs: Date.now() - redisStart };
+      } catch {
+        checks['redis'] = { status: 'down', latencyMs: Date.now() - redisStart };
+      }
+
+      // Userbot check
+      checks['userbot'] = {
+        status: ctx.listener.isConnected() ? 'connected' : 'disconnected',
+      };
+
+      // Bot check
+      try {
+        await withTimeout(ctx.api.getMe(), HEALTH_CHECK_TIMEOUT_MS);
+        checks['bot'] = { status: 'connected' };
+      } catch {
+        checks['bot'] = { status: 'disconnected' };
+      }
+
+      // Queue check
+      const queueCounts = await ctx.forwardQueue.getJobCounts(
         'active',
         'waiting',
         'failed',
-        'delayed',
       );
-      const dlqCounts = await dlq.getJobCounts('waiting');
-      response.queue = { ...counts, dlq: dlqCounts.waiting };
-    }
+      const dlqCounts = await ctx.dlq.getJobCounts('waiting');
+      checks['queue'] = {
+        active: queueCounts.active ?? 0,
+        waiting: queueCounts.waiting ?? 0,
+        failed: queueCounts.failed ?? 0,
+        dlq: dlqCounts.waiting ?? 0,
+      };
 
-    if (cleanupQueue) {
-      const cleanupCounts = await cleanupQueue.getJobCounts(
-        'active',
-        'waiting',
-        'failed',
-        'delayed',
-      );
-      response.cleanup = cleanupCounts;
-    }
+      const status = computeHealthStatus({
+        postgres: checks['postgres'] as ServiceCheck,
+        redis: checks['redis'] as ServiceCheck,
+        userbot: checks['userbot'] as ConnectionCheck,
+        bot: checks['bot'] as ConnectionCheck,
+        queue: checks['queue'] as QueueCheck,
+      });
 
-    return JSON.stringify(response);
+      return { status, uptime, checks };
+    } catch {
+      return { status: 'unhealthy', uptime, checks };
+    }
   };
 
-  if (process.env.NODE_ENV !== 'production' && queue && dlq) {
+  if (process.env.NODE_ENV !== 'production' && ctx.forwardQueue && ctx.dlq) {
     const app = express();
 
     app.get('/', async (_req, res) => {
       const body = await healthHandler();
       res.setHeader('Content-Type', 'application/json');
-      res.end(body);
+      res.end(JSON.stringify(body));
     });
 
-    const dashboardQueues = [queue, dlq];
-    if (cleanupQueue) dashboardQueues.push(cleanupQueue);
+    const dashboardQueues = [ctx.forwardQueue, ctx.dlq];
+    if (ctx.cleanupQueue) dashboardQueues.push(ctx.cleanupQueue);
     const dashboard = createDashboard(dashboardQueues);
     app.use('/admin/queues', dashboard.getRouter());
 
@@ -62,7 +132,7 @@ export function startHealthServer(
   const server = createServer(async (_req, res) => {
     const body = await healthHandler();
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(body);
+    res.end(JSON.stringify(body));
   });
 
   server.listen(port, () => {

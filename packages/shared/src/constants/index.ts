@@ -13,3 +13,18 @@ export const FORWARD_PER_DEST_RATE_LIMIT = 15;
 
 export const QUEUE_NAME_CHANNEL_CLEANUP = 'channel-cleanup';
 export const CLEANUP_GRACE_PERIOD_DAYS = 30;
+
+export const HEALTH_CHECK_TIMEOUT_MS = 3000;
+
+export const LOG_REDACT_PATHS = [
+  'req.headers.authorization',
+  'req.headers["x-api-key"]',
+  '*.password',
+  '*.token',
+  '*.secret',
+  'botToken',
+  'sessionString',
+  'config.BOT_TOKEN',
+  'config.TELEGRAM_SESSION',
+  'config.JWT_SECRET',
+];

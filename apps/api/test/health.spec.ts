@@ -24,13 +24,15 @@ describe('Health endpoint', () => {
     })
       .overrideProvider(PrismaService)
       .useValue({
-        $runCommandRaw: async () => {
-          throw new Error('Use the mongodb provider');
-        },
+        $queryRaw: async () => [{ '?column?': 1 }],
         $queryRawUnsafe: async () => [{ '?column?': 1 }],
       })
       .overrideProvider(BotService)
-      .useValue({ verifyBotAdmin: async () => true, onModuleInit: async () => {} })
+      .useValue({
+        verifyBotAdmin: async () => true,
+        onModuleInit: async () => {},
+        isHealthy: async () => true,
+      })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -44,7 +46,7 @@ describe('Health endpoint', () => {
     }
   });
 
-  it('GET /health returns 200 with status ok', async () => {
+  it('GET /health returns 200 with status healthy', async () => {
     const address = app.getHttpServer().address();
     const port = typeof address === 'object' ? address?.port : address;
     const response = await fetch(`http://localhost:${port}/health`);
@@ -52,10 +54,10 @@ describe('Health endpoint', () => {
     expect(response.status).toBe(200);
 
     const body = (await response.json()) as { status: string };
-    expect(body.status).toBe('ok');
+    expect(body.status).toBe('healthy');
   });
 
-  it('GET /health includes redis status in details', async () => {
+  it('GET /health includes redis and postgres checks', async () => {
     const address = app.getHttpServer().address();
     const port = typeof address === 'object' ? address?.port : address;
     const response = await fetch(`http://localhost:${port}/health`);
@@ -64,9 +66,12 @@ describe('Health endpoint', () => {
 
     const body = (await response.json()) as {
       status: string;
-      details: Record<string, { status: string }>;
+      uptime: number;
+      checks: Record<string, { status: string }>;
     };
-    expect(body.details).toHaveProperty('redis');
-    expect(body.details['redis']!.status).toBe('up');
+    expect(body.checks).toHaveProperty('redis');
+    expect(body.checks['redis']!.status).toBe('up');
+    expect(body.checks).toHaveProperty('postgres');
+    expect(body.uptime).toBeGreaterThan(0);
   });
 });
