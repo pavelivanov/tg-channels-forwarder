@@ -9,6 +9,7 @@ export function startHealthServer(
   logger: Logger,
   queue?: Queue,
   dlq?: Queue,
+  cleanupQueue?: Queue,
 ): Server {
   const healthHandler = async (): Promise<string> => {
     const response: Record<string, unknown> = { status: 'ok' };
@@ -24,6 +25,16 @@ export function startHealthServer(
       response.queue = { ...counts, dlq: dlqCounts.waiting };
     }
 
+    if (cleanupQueue) {
+      const cleanupCounts = await cleanupQueue.getJobCounts(
+        'active',
+        'waiting',
+        'failed',
+        'delayed',
+      );
+      response.cleanup = cleanupCounts;
+    }
+
     return JSON.stringify(response);
   };
 
@@ -36,7 +47,9 @@ export function startHealthServer(
       res.end(body);
     });
 
-    const dashboard = createDashboard([queue, dlq]);
+    const dashboardQueues = [queue, dlq];
+    if (cleanupQueue) dashboardQueues.push(cleanupQueue);
+    const dashboard = createDashboard(dashboardQueues);
     app.use('/admin/queues', dashboard.getRouter());
 
     const server = app.listen(port, () => {

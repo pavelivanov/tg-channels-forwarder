@@ -42,6 +42,7 @@ describe('Worker startup', () => {
         close() { return Promise.resolve(); }
         getJobCounts() { return Promise.resolve({}); }
         add() { return Promise.resolve(); }
+        upsertJobScheduler() { return Promise.resolve(); }
       },
       Worker: class MockWorker {
         constructor() {}
@@ -161,6 +162,21 @@ describe('Worker startup', () => {
       ForwarderService: class MockForwarderService {
         constructor() {}
         forward() { return Promise.resolve(); }
+      },
+    }));
+
+    vi.doMock('../src/cleanup/channel-cleanup.service.ts', () => ({
+      ChannelCleanupService: class MockChannelCleanupService {
+        constructor() {}
+        execute() { return Promise.resolve({ deactivated: 0, failed: 0, total: 0 }); }
+      },
+    }));
+
+    vi.doMock('../src/cleanup/channel-cleanup.consumer.ts', () => ({
+      ChannelCleanupConsumer: class MockChannelCleanupConsumer {
+        constructor() {}
+        startWorker() {}
+        close() { return Promise.resolve(); }
       },
     }));
 

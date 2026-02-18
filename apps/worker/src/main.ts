@@ -16,9 +16,12 @@ import { MessageSender } from './forwarder/message-sender.ts';
 import { RateLimiterService } from './forwarder/rate-limiter.service.ts';
 import { ForwarderService } from './forwarder/forwarder.service.ts';
 import { getPrisma, disconnectPrisma } from './prisma.ts';
+import { ChannelCleanupService } from './cleanup/channel-cleanup.service.ts';
+import { ChannelCleanupConsumer } from './cleanup/channel-cleanup.consumer.ts';
 import {
   QUEUE_NAME_FORWARD,
   QUEUE_NAME_FORWARD_DLQ,
+  QUEUE_NAME_CHANNEL_CLEANUP,
   QUEUE_MAX_ATTEMPTS,
   QUEUE_BACKOFF_DELAY,
   QUEUE_KEEP_COMPLETED,
@@ -103,6 +106,17 @@ const channelManager = new ChannelManager(
 const channelOpsConsumer = new ChannelOpsConsumer(channelManager, logger);
 channelOpsConsumer.startWorker(connection);
 
+// Channel cleanup (scheduled daily at 3:00 AM UTC)
+const cleanupQueue = new Queue(QUEUE_NAME_CHANNEL_CLEANUP, { connection });
+await cleanupQueue.upsertJobScheduler(
+  'daily-channel-cleanup',
+  { pattern: '0 0 3 * * *' },
+  { name: 'channel-cleanup', opts: { attempts: 1 } },
+);
+const cleanupService = new ChannelCleanupService(prisma, channelManager, logger);
+const cleanupConsumer = new ChannelCleanupConsumer(cleanupService, logger);
+cleanupConsumer.startWorker(connection);
+
 listener.start().catch((err) => {
   logger.error(err, 'Failed to start listener');
   process.exit(1);
@@ -112,6 +126,7 @@ listener.start().catch((err) => {
 const shutdown = async () => {
   logger.info('Shutting down...');
   await listener.stop();
+  await cleanupConsumer.close();
   await rateLimiterService.close();
   await disconnectPrisma();
   process.exit(0);
@@ -120,6 +135,6 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 // Health
-startHealthServer(config.WORKER_HEALTH_PORT, logger, forwardQueue, dlq);
+startHealthServer(config.WORKER_HEALTH_PORT, logger, forwardQueue, dlq, cleanupQueue);
 
 logger.info('Worker started successfully');

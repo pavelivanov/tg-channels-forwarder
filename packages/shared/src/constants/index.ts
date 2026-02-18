@@ -10,3 +10,6 @@ export const JOIN_DELAY_MAX_MS = 5000;
 
 export const FORWARD_GLOBAL_RATE_LIMIT = 20;
 export const FORWARD_PER_DEST_RATE_LIMIT = 15;
+
+export const QUEUE_NAME_CHANNEL_CLEANUP = 'channel-cleanup';
+export const CLEANUP_GRACE_PERIOD_DAYS = 30;
