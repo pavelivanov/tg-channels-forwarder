@@ -49,6 +49,7 @@ TypeScript 5.x with `strict: true`, Node.js 20 LTS: Follow standard conventions
 - 013-telegram-mini-app: Added TypeScript 5.x with `strict: true`, React 19, Node.js 20 LTS + React 19, React Router 7, Vite 6, `@twa-dev/sdk`, `@nestjs/serve-static` (API-side)
 - 012-logging-health-check: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, nestjs-pino 4.x, pino 9.x, pino-http 10.x, @nestjs/terminus 10.x, grammY, GramJS (telegram), BullMQ, Prisma ORM v6
 - 011-channel-cleanup: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + BullMQ (existing), Prisma ORM v6 (existing), pino (existing), `ChannelManager` (existing)
+- 010-bot-admin-verification: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10 + grammY (Bot API client), @nestjs/common, @nestjs/config, Prisma ORM v6
 
 
 <!-- MANUAL ADDITIONS START -->
