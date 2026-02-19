@@ -8,7 +8,8 @@
     "dev": "node --import @swc-node/register/esm-register --watch src/main.ts",
     "start": "node dist/main.js",
     "test": "vitest run",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "seed:channels": "tsx --env-file=.env prisma/seed-channels.ts"
   },
   "dependencies": {
     "@aggregator/shared": "workspace:*",
@@ -44,6 +45,7 @@
     "dotenv": "^17.3.1",
     "eslint": "^9.22.0",
     "prisma": "^7.4.0",
+    "telegram": "^2.26.22",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "unplugin-swc": "^1.5.5",

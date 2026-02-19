@@ -31,6 +31,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-16
 - PostgreSQL 16 (real, via Docker Compose) + Redis 7 (real, via Docker Compose) (014-e2e-integration-test)
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, grammY (Bot API), React 19, Vite 6, class-validator (015-destination-channel-name)
 - PostgreSQL 16 via Prisma (existing schema, no migrations — `destinationUsername` field already exists) (015-destination-channel-name)
+- TypeScript 5.x with `strict: true`, Node.js 20 LTS + `telegram` (GramJS) ^2.26.22, `@prisma/client` v6, `@prisma/adapter-pg`, `tsx` ^4.19.4 (016-mtproto-seed-channels)
+- PostgreSQL 16 via Prisma (existing `SourceChannel` model, no schema changes) (016-mtproto-seed-channels)
 
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, @nestjs/terminus, nestjs-pino, pino, (001-monorepo-scaffold)
 
@@ -50,9 +52,9 @@ npm test && npm run lint
 TypeScript 5.x with `strict: true`, Node.js 20 LTS: Follow standard conventions
 
 ## Recent Changes
+- 016-mtproto-seed-channels: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + `telegram` (GramJS) ^2.26.22, `@prisma/client` v6, `@prisma/adapter-pg`, `tsx` ^4.19.4
 - 015-destination-channel-name: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, grammY (Bot API), React 19, Vite 6, class-validator
 - 014-e2e-integration-test: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + Vitest, ioredis, bullmq, grammy (mocked), @prisma/client, pino
-- 013-telegram-mini-app: Added TypeScript 5.x with `strict: true`, React 19, Node.js 20 LTS + React 19, React Router 7, Vite 6, `@twa-dev/sdk`, `@nestjs/serve-static` (API-side)
 
 
 <!-- MANUAL ADDITIONS START -->
