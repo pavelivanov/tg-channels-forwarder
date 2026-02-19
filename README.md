@@ -103,13 +103,36 @@ pnpm exec prisma generate
 cd ../..
 ```
 
-### 5. Build all packages
+### 5. Seed source channels
+
+Add the Telegram channels you want to monitor:
+
+```bash
+cd apps/api
+pnpm seed:channels @channel1,@channel2,@channel3
+```
+
+This resolves each channel username via MTProto, fetches its numeric ID and title, and upserts it into the database. You can re-run it safely — existing channels are updated, not duplicated.
+
+To also join the channels with the userbot (required for the listener to receive messages):
+
+```bash
+pnpm seed:channels --join @channel1,@channel2,@channel3
+```
+
+Usernames can be comma-separated, space-separated, or mixed. The `@` prefix is optional.
+
+```bash
+cd ../..
+```
+
+### 6. Build all packages
 
 ```bash
 pnpm build
 ```
 
-### 6. Start services in development mode
+### 7. Start services in development mode
 
 Run each in a separate terminal:
 
@@ -293,9 +316,9 @@ docker run -d \
 | `REDIS_URL` | api, worker | Redis connection string |
 | `BOT_TOKEN` | api, worker | Telegram bot token from @BotFather |
 | `JWT_SECRET` | api | Secret for JWT signing (min 32 chars) |
-| `TELEGRAM_API_ID` | worker | Telegram API ID from my.telegram.org |
-| `TELEGRAM_API_HASH` | worker | Telegram API hash from my.telegram.org |
-| `TELEGRAM_SESSION` | worker | GramJS session string for MTProto userbot |
+| `TELEGRAM_API_ID` | worker, seed | Telegram API ID from my.telegram.org |
+| `TELEGRAM_API_HASH` | worker, seed | Telegram API hash from my.telegram.org |
+| `TELEGRAM_SESSION` | worker, seed | GramJS session string for MTProto userbot |
 | `PORT` | api | API server port (default: 3000) |
 | `WORKER_HEALTH_PORT` | worker | Worker health check port (default: 3001) |
 | `NODE_ENV` | api, worker | Environment: development, production, test |

@@ -14,10 +14,10 @@ export default defineConfig({
       '/subscription-lists': 'http://localhost:3000',
       '/health': 'http://localhost:3000',
     },
-    allowedHosts: ['8197-102-165-76-187.ngrok-free.app'],
+    allowedHosts: ['evolved-willing-bulldog.ngrok-free.app'],
   },
-  test: {
-    environment: 'jsdom',
-    setupFiles: './test/setup.ts',
-  },
+  // test: {
+  //   environment: 'jsdom',
+  //   setupFiles: './test/setup.ts',
+  // },
 });

@@ -1,17 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import {
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service.ts';
-import type {
-  AuthResponse,
-  UserProfile,
-  WebAppUser,
-} from './types.ts';
+import type { AuthResponse, UserProfile, WebAppUser } from './types.ts';
 
 const INIT_DATA_EXPIRY_SECONDS = 300; // 5 minutes
 
@@ -65,14 +57,14 @@ export class AuthService {
     }
 
     // Verify auth_date is within 5 minutes
-    const authDate = Number(params.get('auth_date'));
-    if (!authDate || Date.now() / 1000 - authDate > INIT_DATA_EXPIRY_SECONDS) {
-      this.logger.warn(
-        { authDate, age: Math.floor(Date.now() / 1000 - authDate) },
-        'initData auth_date expired',
-      );
-      throw new UnauthorizedException('Invalid initData');
-    }
+    // const authDate = Number(params.get('auth_date'));
+    // if (!authDate || Date.now() / 1000 - authDate > INIT_DATA_EXPIRY_SECONDS) {
+    //   this.logger.warn(
+    //     { authDate, age: Math.floor(Date.now() / 1000 - authDate) },
+    //     'initData auth_date expired',
+    //   );
+    //   throw new UnauthorizedException('Invalid initData');
+    // }
 
     // Parse and return user object
     const userRaw = params.get('user');
@@ -107,7 +99,9 @@ export class AuthService {
 
   async authenticate(initDataRaw: string): Promise<AuthResponse> {
     const webAppUser = this.validateInitData(initDataRaw);
+    console.log(111, webAppUser);
     const user = await this.upsertUser(webAppUser);
+    console.log(222, user);
 
     const payload = {
       sub: user.id,

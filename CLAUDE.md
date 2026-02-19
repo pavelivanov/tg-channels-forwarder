@@ -61,4 +61,6 @@ TypeScript 5.x with `strict: true`, Node.js 20 LTS: Follow standard conventions
 
 Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
 
+When working on `apps/mini-app`, always use the Shadcn MCP for UI components. Use it to look up available components, get usage examples, and add new components to the project.
+
 <!-- MANUAL ADDITIONS END -->
