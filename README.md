@@ -18,12 +18,23 @@ A Telegram channel message forwarding system. Monitors source channels via MTPro
 **Apps:**
 - `apps/api` — NestJS REST API (auth, channels, subscription lists, serves mini-app)
 - `apps/worker` — Background worker (listener, forwarder, dedup, rate limiter)
-- `apps/mini-app` — React Telegram Mini App (manage subscription lists)
+- `apps/mini-app` — React Telegram Mini App (manage subscription lists, shadcn/ui + Tailwind CSS v4)
 
 **Packages:**
 - `packages/shared` — Shared types, constants, queue definitions, dedup utilities
 - `packages/tsconfig` — Shared TypeScript configuration
 - `packages/eslint-config` — Shared ESLint configuration
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Monorepo | Turborepo + pnpm workspaces |
+| API | NestJS 10, Prisma ORM v6, PostgreSQL 16 |
+| Worker | BullMQ, GramJS (MTProto), grammY (Bot API), Redis 7 |
+| Mini App | React 19, Vite 6, Tailwind CSS v4, shadcn/ui (new-york), React Router 7 |
+| Auth | Telegram `initData` HMAC validation → JWT |
+| Testing | Vitest, Testing Library, Supertest |
 
 ## Prerequisites
 
@@ -163,6 +174,21 @@ cd apps/worker && pnpm start
 
 - API: `http://localhost:3000/health`
 - Worker: `http://localhost:3001/health`
+
+### Mini App UI
+
+The Mini App uses [shadcn/ui](https://ui.shadcn.com/) components with Tailwind CSS v4. Telegram theme integration is automatic — shadcn's CSS design tokens are mapped to Telegram's `--tg-theme-*` runtime variables, so light/dark mode works without any JavaScript detection:
+
+```
+Telegram runtime → --tg-theme-* → shadcn :root tokens → @theme inline → Tailwind classes
+```
+
+To add new shadcn components:
+
+```bash
+cd apps/mini-app
+npx shadcn@latest add <component-name>
+```
 
 ### Testing the Mini App locally
 
@@ -339,8 +365,15 @@ tg-channels-forwarder/
 │   │   ├── test/             # Tests (unit + e2e)
 │   │   └── Dockerfile
 │   └── mini-app/             # React Telegram Mini App
-│       ├── src/              # Source code
-│       ├── test/             # Tests
+│       ├── src/
+│       │   ├── components/   # App components + ui/ (shadcn)
+│       │   ├── pages/        # Route pages
+│       │   ├── hooks/        # Custom React hooks
+│       │   ├── lib/          # Utilities (cn, api-client, telegram)
+│       │   ├── context/      # Auth context
+│       │   └── styles/       # Tailwind CSS v4 + Telegram theme
+│       ├── test/             # Tests (Vitest + Testing Library)
+│       ├── components.json   # shadcn/ui configuration
 │       └── Dockerfile
 ├── packages/
 │   ├── shared/               # Shared types and utilities
