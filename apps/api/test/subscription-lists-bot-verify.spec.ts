@@ -3,6 +3,7 @@ import { createHmac } from 'node:crypto';
 import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 import { Test } from '@nestjs/testing';
 import {
+  BadRequestException,
   ValidationPipe,
   ServiceUnavailableException,
   type INestApplication,
@@ -27,6 +28,7 @@ const { AppModule } = await import('../src/app.module.ts');
 
 // --- Mock BotService ---
 
+const mockResolveChannel = vi.fn<(username: string) => Promise<{ id: number; title: string }>>();
 const mockVerifyBotAdmin = vi.fn<(channelId: number) => Promise<boolean>>();
 
 // --- Helpers ---
@@ -145,7 +147,7 @@ describe('Subscription Lists Bot Verification', () => {
       imports: [AppModule],
     })
       .overrideProvider(BotService)
-      .useValue({ verifyBotAdmin: mockVerifyBotAdmin, onModuleInit: vi.fn() })
+      .useValue({ resolveChannel: mockResolveChannel, verifyBotAdmin: mockVerifyBotAdmin, onModuleInit: vi.fn() })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -190,7 +192,8 @@ describe('Subscription Lists Bot Verification', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    // Default: bot is admin
+    // Default: resolveChannel returns a valid channel, bot is admin
+    mockResolveChannel.mockResolvedValue({ id: -1001002000099, title: 'Resolved Channel' });
     mockVerifyBotAdmin.mockResolvedValue(true);
   });
 
@@ -235,7 +238,7 @@ describe('Subscription Lists Bot Verification', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Admin Verified List',
-            destinationChannelId: 1002000099,
+            destinationUsername: 'adminverified',
             sourceChannelIds: [sourceChannelId],
           }),
         },
@@ -244,7 +247,8 @@ describe('Subscription Lists Bot Verification', () => {
       expect(res.status).toBe(201);
       const body = (await res.json()) as ListResponse;
       expect(body.name).toBe('Admin Verified List');
-      expect(mockVerifyBotAdmin).toHaveBeenCalledWith(1002000099);
+      expect(mockResolveChannel).toHaveBeenCalledWith('adminverified');
+      expect(mockVerifyBotAdmin).toHaveBeenCalledWith(-1001002000099);
     });
 
     it('rejects list creation with DESTINATION_BOT_NOT_ADMIN when bot is not admin', async () => {
@@ -258,7 +262,7 @@ describe('Subscription Lists Bot Verification', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Should Fail',
-            destinationChannelId: 1002000099,
+            destinationUsername: 'shouldfail',
             sourceChannelIds: [sourceChannelId],
           }),
         },
@@ -290,7 +294,7 @@ describe('Subscription Lists Bot Verification', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Update Test List',
-            destinationChannelId: 1002000088,
+            destinationUsername: 'updatetestlist',
             sourceChannelIds: [sourceChannelId],
           }),
         },
@@ -308,17 +312,19 @@ describe('Subscription Lists Bot Verification', () => {
         authToken,
         {
           method: 'PATCH',
-          body: JSON.stringify({ destinationChannelId: 1002000077 }),
+          body: JSON.stringify({ destinationUsername: 'newchannel' }),
         },
       );
 
       expect(res.status).toBe(400);
       const body = (await res.json()) as ErrorResponseWithCode;
       expect(body.errorCode).toBe('DESTINATION_BOT_NOT_ADMIN');
-      expect(mockVerifyBotAdmin).toHaveBeenCalledWith(1002000077);
+      expect(mockResolveChannel).toHaveBeenCalledWith('newchannel');
+      expect(mockVerifyBotAdmin).toHaveBeenCalledWith(-1001002000099);
     });
 
     it('updates name without triggering bot admin verification', async () => {
+      mockResolveChannel.mockClear();
       mockVerifyBotAdmin.mockClear();
 
       const res = await authedFetch(
@@ -333,6 +339,7 @@ describe('Subscription Lists Bot Verification', () => {
       expect(res.status).toBe(200);
       const body = (await res.json()) as ListResponse;
       expect(body.name).toBe('Renamed Without Verify');
+      expect(mockResolveChannel).not.toHaveBeenCalled();
       expect(mockVerifyBotAdmin).not.toHaveBeenCalled();
     });
   });
@@ -342,9 +349,9 @@ describe('Subscription Lists Bot Verification', () => {
   describe('US3: Service unavailable — bot admin verification', () => {
     it('returns 503 when Telegram API is unavailable', async () => {
       await cleanUserLists();
-      mockVerifyBotAdmin.mockRejectedValue(
+      mockResolveChannel.mockRejectedValue(
         new ServiceUnavailableException(
-          'Unable to verify bot admin status. Please try again later.',
+          'Unable to resolve channel. Please try again later.',
         ),
       );
 
@@ -355,7 +362,7 @@ describe('Subscription Lists Bot Verification', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Service Down',
-            destinationChannelId: 1002000099,
+            destinationUsername: 'servicedown',
             sourceChannelIds: [sourceChannelId],
           }),
         },
@@ -364,8 +371,85 @@ describe('Subscription Lists Bot Verification', () => {
       expect(res.status).toBe(503);
       const body = (await res.json()) as ErrorResponseWithCode;
       expect(body.message).toContain(
-        'Unable to verify bot admin status',
+        'Unable to resolve channel',
       );
+    });
+  });
+
+  // --- US4: Channel resolution error paths ---
+
+  describe('US4: Channel resolution edge cases', () => {
+    it('returns 400 when channel not found (resolveChannel throws)', async () => {
+      await cleanUserLists();
+      mockResolveChannel.mockRejectedValue(
+        new BadRequestException(
+          'Channel not found or bot has no access. Make sure the channel exists and the bot is a member.',
+        ),
+      );
+
+      const res = await authedFetch(
+        `${baseUrl}/subscription-lists`,
+        authToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'Not Found Channel',
+            destinationUsername: 'nonexistent',
+            sourceChannelIds: [sourceChannelId],
+          }),
+        },
+      );
+
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as ErrorResponseWithCode;
+      expect(body.message).toContain('Channel not found');
+    });
+
+    it('returns 400 when resolveChannel succeeds but bot is not admin', async () => {
+      await cleanUserLists();
+      mockResolveChannel.mockResolvedValue({ id: -1001002000099, title: 'Found Channel' });
+      mockVerifyBotAdmin.mockResolvedValue(false);
+
+      const res = await authedFetch(
+        `${baseUrl}/subscription-lists`,
+        authToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'No Admin Access',
+            destinationUsername: 'noadmin',
+            sourceChannelIds: [sourceChannelId],
+          }),
+        },
+      );
+
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as ErrorResponseWithCode;
+      expect(body.errorCode).toBe('DESTINATION_BOT_NOT_ADMIN');
+    });
+
+    it('accepts username with @ prefix', async () => {
+      await cleanUserLists();
+      mockResolveChannel.mockResolvedValue({ id: -1001002000099, title: 'At Channel' });
+      mockVerifyBotAdmin.mockResolvedValue(true);
+
+      const res = await authedFetch(
+        `${baseUrl}/subscription-lists`,
+        authToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            name: 'At Prefix Test',
+            destinationUsername: '@atchannel',
+            sourceChannelIds: [sourceChannelId],
+          }),
+        },
+      );
+
+      expect(res.status).toBe(201);
+      const body = (await res.json()) as ListResponse;
+      expect(body.destinationUsername).toBe('atchannel');
+      expect(mockResolveChannel).toHaveBeenCalledWith('atchannel');
     });
   });
 });

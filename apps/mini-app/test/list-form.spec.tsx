@@ -36,7 +36,6 @@ const mockChannels: SourceChannel[] = [
 const existingList: SubscriptionList = {
   id: 'list-1',
   name: 'Existing List',
-  destinationChannelId: -1001234567890,
   destinationUsername: 'destchannel',
   isActive: true,
   sourceChannels: [mockChannels[0]],
@@ -110,11 +109,8 @@ describe('ListFormPage', () => {
     const nameInput = await screen.findByLabelText(/list name/i);
     await user.type(nameInput, 'New List');
 
-    const destIdInput = screen.getByLabelText(/destination.*id/i);
-    await user.type(destIdInput, '-1001234567890');
-
-    const destUsernameInput = screen.getByLabelText(/destination.*username/i);
-    await user.type(destUsernameInput, 'mydest');
+    const destInput = screen.getByLabelText(/destination channel/i);
+    await user.type(destInput, '@mydest');
 
     // Select a channel
     const checkbox = screen.getByRole('checkbox', { name: /channel1/i });
@@ -125,6 +121,7 @@ describe('ListFormPage', () => {
 
     expect(mockApi.post).toHaveBeenCalledWith('/subscription-lists', expect.objectContaining({
       name: 'New List',
+      destinationUsername: 'mydest',
     }));
   });
 
@@ -148,7 +145,7 @@ describe('ListFormPage', () => {
   it('shows validation errors from backend inline', async () => {
     mockApi.post.mockRejectedValueOnce({
       statusCode: 400,
-      message: 'Invalid destination channel',
+      message: 'Channel not found or bot has no access',
       error: 'Bad Request',
     });
 
@@ -158,8 +155,8 @@ describe('ListFormPage', () => {
     const nameInput = await screen.findByLabelText(/list name/i);
     await user.type(nameInput, 'New List');
 
-    const destIdInput = screen.getByLabelText(/destination.*id/i);
-    await user.type(destIdInput, '-1001234567890');
+    const destInput = screen.getByLabelText(/destination channel/i);
+    await user.type(destInput, '@nonexistent');
 
     const checkbox = screen.getByRole('checkbox', { name: /channel1/i });
     await user.click(checkbox);
@@ -167,7 +164,7 @@ describe('ListFormPage', () => {
     const submitBtn = screen.getByRole('button', { name: /create/i });
     await user.click(submitBtn);
 
-    expect(await screen.findByText(/invalid destination channel/i)).toBeInTheDocument();
+    expect(await screen.findByText(/channel not found/i)).toBeInTheDocument();
   });
 
   it('shows limit error on 403', async () => {
@@ -183,8 +180,8 @@ describe('ListFormPage', () => {
     const nameInput = await screen.findByLabelText(/list name/i);
     await user.type(nameInput, 'New List');
 
-    const destIdInput = screen.getByLabelText(/destination.*id/i);
-    await user.type(destIdInput, '-1001234567890');
+    const destInput = screen.getByLabelText(/destination channel/i);
+    await user.type(destInput, '@mychannel');
 
     const checkbox = screen.getByRole('checkbox', { name: /channel1/i });
     await user.click(checkbox);
@@ -202,11 +199,8 @@ describe('ListFormPage', () => {
     const nameInput = await screen.findByLabelText(/list name/i);
     await user.type(nameInput, 'New List');
 
-    const destIdInput = screen.getByLabelText(/destination.*id/i);
-    await user.type(destIdInput, '-1001234567890');
-
-    const destUsernameInput = screen.getByLabelText(/destination.*username/i);
-    await user.type(destUsernameInput, 'mydest');
+    const destInput = screen.getByLabelText(/destination channel/i);
+    await user.type(destInput, '@mydest');
 
     const checkbox = screen.getByRole('checkbox', { name: /channel1/i });
     await user.click(checkbox);

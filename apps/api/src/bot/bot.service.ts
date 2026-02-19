@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   type OnModuleInit,
@@ -16,7 +17,6 @@ export class BotService implements OnModuleInit {
 
   constructor(private readonly config: ConfigService) {
     const token = this.config.get<string>('BOT_TOKEN')!;
-    console.log(111, token);
     this.api = new Api(token);
   }
 
@@ -48,6 +48,30 @@ export class BotService implements OnModuleInit {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  async resolveChannel(username: string): Promise<{ id: number; title: string }> {
+    try {
+      const chat = await this.api.getChat(`@${username}`);
+      const title = 'title' in chat ? chat.title ?? '' : '';
+      this.logger.log(`Channel resolved: @${username} → ${String(chat.id)} (${title})`);
+      return { id: chat.id, title };
+    } catch (error: unknown) {
+      if (error instanceof GrammyError) {
+        this.logger.warn(`Channel resolution failed for @${username}: ${error.message}`);
+        throw new BadRequestException(
+          'Channel not found or bot has no access. Make sure the channel exists and the bot is a member.',
+        );
+      }
+
+      this.logger.error(
+        { username, error },
+        'Unexpected error resolving channel',
+      );
+      throw new ServiceUnavailableException(
+        'Unable to resolve channel. Please try again later.',
+      );
     }
   }
 

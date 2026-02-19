@@ -152,8 +152,14 @@ export class SubscriptionListsService {
     userId: string,
     dto: CreateSubscriptionListDto,
   ): Promise<SubscriptionListResponse> {
+    // Normalize username (strip leading @)
+    const username = dto.destinationUsername.replace(/^@/, '');
+
+    // Resolve username to channel ID
+    const resolved = await this.botService.resolveChannel(username);
+
     // Verify bot is admin in destination channel
-    const isAdmin = await this.botService.verifyBotAdmin(dto.destinationChannelId);
+    const isAdmin = await this.botService.verifyBotAdmin(resolved.id);
     if (!isAdmin) {
       throw new BotNotAdminException();
     }
@@ -187,8 +193,8 @@ export class SubscriptionListsService {
       data: {
         userId,
         name: dto.name,
-        destinationChannelId: BigInt(dto.destinationChannelId),
-        destinationUsername: dto.destinationUsername ?? null,
+        destinationChannelId: BigInt(resolved.id),
+        destinationUsername: username,
         subscriptionListChannels: {
           create: uniqueIds.map((id) => ({ sourceChannelId: id })),
         },
@@ -213,22 +219,34 @@ export class SubscriptionListsService {
   ): Promise<SubscriptionListResponse> {
     // Check at least one field present
     const hasName = dto.name !== undefined;
-    const hasDestId = dto.destinationChannelId !== undefined;
     const hasDestUsername = dto.destinationUsername !== undefined;
     const hasSourceChannels = dto.sourceChannelIds !== undefined;
 
-    if (!hasName && !hasDestId && !hasDestUsername && !hasSourceChannels) {
+    if (!hasName && !hasDestUsername && !hasSourceChannels) {
       throw new BadRequestException(
         'Request body must contain at least one updatable field',
       );
     }
 
-    // Verify bot is admin in new destination channel (FR-002, FR-003)
-    if (hasDestId) {
-      const isAdmin = await this.botService.verifyBotAdmin(dto.destinationChannelId!);
+    // Build scalar update data
+    const updateData: {
+      name?: string;
+      destinationChannelId?: bigint;
+      destinationUsername?: string;
+    } = {};
+
+    if (hasName) updateData.name = dto.name;
+
+    // Resolve and verify new destination channel
+    if (hasDestUsername) {
+      const username = dto.destinationUsername!.replace(/^@/, '');
+      const resolved = await this.botService.resolveChannel(username);
+      const isAdmin = await this.botService.verifyBotAdmin(resolved.id);
       if (!isAdmin) {
         throw new BotNotAdminException();
       }
+      updateData.destinationChannelId = BigInt(resolved.id);
+      updateData.destinationUsername = username;
     }
 
     // Ownership + active check
@@ -236,17 +254,6 @@ export class SubscriptionListsService {
     if (!existing) {
       throw new NotFoundException('Subscription list not found');
     }
-
-    // Build scalar update data
-    const updateData: {
-      name?: string;
-      destinationChannelId?: bigint;
-      destinationUsername?: string | null;
-    } = {};
-
-    if (hasName) updateData.name = dto.name;
-    if (hasDestId) updateData.destinationChannelId = BigInt(dto.destinationChannelId!);
-    if (hasDestUsername) updateData.destinationUsername = dto.destinationUsername ?? null;
 
     if (hasSourceChannels) {
       // Deduplicate and validate

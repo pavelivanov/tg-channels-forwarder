@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GrammyError } from 'grammy';
 
 const mockGetChatMember = vi.fn();
+const mockGetChat = vi.fn();
 const mockGetMe = vi
   .fn()
   .mockResolvedValue({ id: 123, is_bot: true, first_name: 'TestBot' });
@@ -14,6 +15,7 @@ vi.mock('grammy', async (importOriginal) => {
     ...actual,
     Api: vi.fn().mockImplementation(() => ({
       getChatMember: mockGetChatMember,
+      getChat: mockGetChat,
       getMe: mockGetMe,
     })),
   };
@@ -122,6 +124,48 @@ describe('BotService', () => {
     mockGetChatMember.mockRejectedValue(new Error('Network error'));
 
     await expect(service.verifyBotAdmin(-1001234567890)).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+  });
+
+  // --- resolveChannel ---
+
+  it('resolveChannel returns id and title on success', async () => {
+    mockGetChat.mockResolvedValue({
+      id: -1001234567890,
+      type: 'channel',
+      title: 'Test Channel',
+    });
+
+    const result = await service.resolveChannel('testchannel');
+
+    expect(result).toEqual({ id: -1001234567890, title: 'Test Channel' });
+    expect(mockGetChat).toHaveBeenCalledWith('@testchannel');
+  });
+
+  it('resolveChannel throws BadRequestException on GrammyError', async () => {
+    mockGetChat.mockRejectedValue(
+      new GrammyError(
+        'Bad Request: chat not found',
+        {
+          ok: false,
+          error_code: 400,
+          description: 'Bad Request: chat not found',
+        },
+        'getChat',
+        { chat_id: '@nonexistent' },
+      ),
+    );
+
+    await expect(service.resolveChannel('nonexistent')).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('resolveChannel throws ServiceUnavailableException on non-Grammy error', async () => {
+    mockGetChat.mockRejectedValue(new Error('Network error'));
+
+    await expect(service.resolveChannel('testchannel')).rejects.toThrow(
       ServiceUnavailableException,
     );
   });

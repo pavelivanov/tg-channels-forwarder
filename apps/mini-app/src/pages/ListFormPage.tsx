@@ -30,7 +30,6 @@ export function ListFormPage() {
   const { channels, isLoading: channelsLoading, addChannel } = useChannels();
 
   const [name, setName] = useState('');
-  const [destinationChannelId, setDestinationChannelId] = useState('');
   const [destinationUsername, setDestinationUsername] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoadingList, setIsLoadingList] = useState(isEdit);
@@ -44,7 +43,6 @@ export function ListFormPage() {
       .get<SubscriptionList>(`/subscription-lists/${id}`)
       .then((list) => {
         setName(list.name);
-        setDestinationChannelId(String(list.destinationChannelId));
         setDestinationUsername(list.destinationUsername ?? '');
         setSelectedIds(new Set(list.sourceChannels.map((ch) => ch.id)));
       })
@@ -97,8 +95,8 @@ export function ListFormPage() {
       return;
     }
 
-    if (!destinationChannelId.trim()) {
-      setError('Destination channel ID is required');
+    if (!destinationUsername.trim()) {
+      setError('Destination channel is required');
       return;
     }
 
@@ -111,8 +109,7 @@ export function ListFormPage() {
     try {
       const payload = {
         name: name.trim(),
-        destinationChannelId: Number(destinationChannelId),
-        destinationUsername: destinationUsername.trim() || undefined,
+        destinationUsername: destinationUsername.trim().replace(/^@/, ''),
         sourceChannelIds: Array.from(selectedIds),
       };
 
@@ -152,29 +149,18 @@ export function ListFormPage() {
         </div>
 
         <div style={sectionStyle}>
-          <label htmlFor="dest-id" style={labelStyle}>
-            Destination Channel ID
-          </label>
-          <input
-            id="dest-id"
-            type="text"
-            inputMode="numeric"
-            value={destinationChannelId}
-            onChange={(e) => setDestinationChannelId(e.target.value)}
-            placeholder="-1001234567890"
-          />
-        </div>
-
-        <div style={sectionStyle}>
           <label htmlFor="dest-username" style={labelStyle}>
-            Destination Username
+            Destination Channel
           </label>
           <input
             id="dest-username"
             type="text"
             value={destinationUsername}
-            onChange={(e) => setDestinationUsername(e.target.value)}
-            placeholder="channelname"
+            onChange={(e) => {
+              setDestinationUsername(e.target.value);
+              setError(null);
+            }}
+            placeholder="@mychannel"
           />
         </div>
 

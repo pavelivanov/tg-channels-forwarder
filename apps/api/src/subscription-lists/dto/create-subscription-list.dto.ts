@@ -1,11 +1,10 @@
 import {
   ArrayNotEmpty,
   IsArray,
-  IsInt,
   IsNotEmpty,
-  IsOptional,
   IsString,
   IsUUID,
+  Matches,
 } from 'class-validator';
 
 export class CreateSubscriptionListDto {
@@ -13,12 +12,12 @@ export class CreateSubscriptionListDto {
   @IsNotEmpty()
   name!: string;
 
-  @IsInt()
-  destinationChannelId!: number;
-
-  @IsOptional()
   @IsString()
-  destinationUsername?: string;
+  @IsNotEmpty()
+  @Matches(/^@?[a-zA-Z][a-zA-Z0-9_]{3,}$/, {
+    message: 'destinationUsername must be a valid Telegram channel username (e.g. @mychannel)',
+  })
+  destinationUsername!: string;
 
   @IsArray()
   @ArrayNotEmpty()

@@ -140,7 +140,11 @@ describe('Subscription Lists API', () => {
       imports: [AppModule],
     })
       .overrideProvider(BotService)
-      .useValue({ verifyBotAdmin: async () => true, onModuleInit: async () => {} })
+      .useValue({
+        resolveChannel: async () => ({ id: -1001002000001, title: 'Resolved Channel' }),
+        verifyBotAdmin: async () => true,
+        onModuleInit: async () => {},
+      })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -351,7 +355,6 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'My Tech Feed',
-            destinationChannelId: 1002000001,
             destinationUsername: 'mytechfeed',
             sourceChannelIds: [sourceChannel1Id, sourceChannel2Id],
           }),
@@ -361,7 +364,6 @@ describe('Subscription Lists API', () => {
       expect(res.status).toBe(201);
       const body = (await res.json()) as ListResponse;
       expect(body.name).toBe('My Tech Feed');
-      expect(body.destinationChannelId).toBe('1002000001');
       expect(body.destinationUsername).toBe('mytechfeed');
       expect(body.isActive).toBe(true);
       expect(body.sourceChannels).toHaveLength(2);
@@ -378,7 +380,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Second List',
-            destinationChannelId: 1002000002,
+            destinationUsername: 'secondlist',
             sourceChannelIds: [sourceChannel1Id],
           }),
         },
@@ -402,7 +404,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Bad Channels',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'badchannels',
             sourceChannelIds: [fakeId],
           }),
         },
@@ -422,7 +424,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Empty Channels',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'emptychannels',
             sourceChannelIds: [],
           }),
         },
@@ -456,7 +458,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Dedup Test',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'deduptest',
             sourceChannelIds: [
               sourceChannel1Id,
               sourceChannel1Id,
@@ -477,7 +479,7 @@ describe('Subscription Lists API', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: 'No Auth',
-          destinationChannelId: 1002000001,
+          destinationUsername: 'noauth',
           sourceChannelIds: [sourceChannel1Id],
         }),
       });
@@ -502,7 +504,6 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Original Name',
-            destinationChannelId: 1002000001,
             destinationUsername: 'original',
             sourceChannelIds: [sourceChannel1Id, sourceChannel2Id],
           }),
@@ -572,7 +573,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'To Delete',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'todelete',
             sourceChannelIds: [sourceChannel1Id],
           }),
         },
@@ -608,7 +609,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'For Empty Body Test',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'foremptybodytest',
             sourceChannelIds: [sourceChannel1Id],
           }),
         },
@@ -679,7 +680,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'To Delete',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'todelete',
             sourceChannelIds: [sourceChannel1Id],
           }),
         },
@@ -727,7 +728,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Owner Test',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'ownertest',
             sourceChannelIds: [sourceChannel1Id],
           }),
         },
@@ -796,7 +797,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'First List',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'firstlist',
             sourceChannelIds: [sourceChannel1Id],
           }),
         },
@@ -812,7 +813,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Second List',
-            destinationChannelId: 1002000002,
+            destinationUsername: 'secondlist',
             sourceChannelIds: [sourceChannel2Id],
           }),
         },
@@ -835,7 +836,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Replacement List',
-            destinationChannelId: 1002000003,
+            destinationUsername: 'replacementlist',
             sourceChannelIds: [sourceChannel3Id],
           }),
         },
@@ -879,7 +880,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Full 30',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'fullthirty',
             sourceChannelIds: channelIds,
           }),
         },
@@ -896,7 +897,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Over Limit',
-            destinationChannelId: 1002000002,
+            destinationUsername: 'overlimit',
             sourceChannelIds: [sourceChannel1Id],
           }),
         },
@@ -931,7 +932,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'List A',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'lista',
             sourceChannelIds: [sourceChannel1Id],
           }),
         },
@@ -945,7 +946,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'List B',
-            destinationChannelId: 1002000002,
+            destinationUsername: 'listb',
             sourceChannelIds: [sourceChannel1Id],
           }),
         },
@@ -984,7 +985,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Update Test',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'updatetest',
             sourceChannelIds: [
               sourceChannel1Id,
               sourceChannel2Id,
@@ -1036,7 +1037,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'Capacity Test',
-            destinationChannelId: 1002000001,
+            destinationUsername: 'capacitytest',
             sourceChannelIds: [sourceChannel1Id, sourceChannel2Id],
           }),
         },
@@ -1060,7 +1061,7 @@ describe('Subscription Lists API', () => {
           method: 'POST',
           body: JSON.stringify({
             name: 'After Delete',
-            destinationChannelId: 1002000002,
+            destinationUsername: 'afterdelete',
             sourceChannelIds: [sourceChannel1Id, sourceChannel2Id, sourceChannel3Id],
           }),
         },
