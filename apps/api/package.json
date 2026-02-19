@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "prisma generate && tsc --project tsconfig.json",
-    "dev": "tsx watch src/main.ts",
+    "dev": "node --import @swc-node/register/esm-register --watch src/main.ts",
     "start": "node dist/main.js",
     "test": "vitest run",
     "lint": "eslint ."
@@ -38,6 +38,7 @@
     "@aggregator/eslint-config": "workspace:*",
     "@aggregator/tsconfig": "workspace:*",
     "@nestjs/testing": "^10.4.15",
+    "@swc-node/register": "^1.11.1",
     "@swc/core": "^1.12.1",
     "@types/node": "^22.15.17",
     "dotenv": "^17.3.1",

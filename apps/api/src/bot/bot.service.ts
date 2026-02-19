@@ -16,13 +16,22 @@ export class BotService implements OnModuleInit {
 
   constructor(private readonly config: ConfigService) {
     const token = this.config.get<string>('BOT_TOKEN')!;
+    console.log(111, token);
     this.api = new Api(token);
   }
 
   async onModuleInit(): Promise<void> {
-    const me = await this.api.getMe();
-    this.botUserId = me.id;
-    this.logger.log(`Bot initialized: @${me.username} (${me.id})`);
+    try {
+      const me = await this.api.getMe();
+      this.botUserId = me.id;
+      this.logger.log(`Bot initialized: @${me.username} (${me.id})`);
+    } catch (error) {
+      this.logger.error(
+        { error: error instanceof Error ? error.message : error },
+        'Failed to initialize bot — check BOT_TOKEN',
+      );
+      throw error;
+    }
   }
 
   async isHealthy(): Promise<boolean> {
@@ -30,7 +39,10 @@ export class BotService implements OnModuleInit {
       await Promise.race([
         this.api.getMe(),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Bot health check timeout')), HEALTH_CHECK_TIMEOUT_MS),
+          setTimeout(
+            () => reject(new Error('Bot health check timeout')),
+            HEALTH_CHECK_TIMEOUT_MS,
+          ),
         ),
       ]);
       return true;
@@ -51,11 +63,17 @@ export class BotService implements OnModuleInit {
       return member.status === 'administrator' || member.status === 'creator';
     } catch (error: unknown) {
       if (error instanceof GrammyError) {
-        this.logger.warn({ channelId }, `Grammy error verifying bot admin: ${error.message}`);
+        this.logger.warn(
+          { channelId },
+          `Grammy error verifying bot admin: ${error.message}`,
+        );
         return false;
       }
 
-      this.logger.error({ channelId, error }, 'Failed to verify bot admin status');
+      this.logger.error(
+        { channelId, error },
+        'Failed to verify bot admin status',
+      );
       throw new ServiceUnavailableException(
         'Unable to verify bot admin status. Please try again later.',
       );

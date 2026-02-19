@@ -60,7 +60,7 @@ export class ChannelManager {
 
       return { telegramId, title };
     } catch (error) {
-      await this.prisma.sourceChannel.delete({ where: { id: channelId } });
+      await this.prisma.sourceChannel.deleteMany({ where: { id: channelId } });
       this.logger.error({ channelId, username, error }, 'channel_join_failed');
       throw error;
     }

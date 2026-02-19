@@ -6,13 +6,13 @@ A Telegram channel message forwarding system. Monitors source channels via MTPro
 
 ```
 ┌─────────────┐     ┌───────────┐     ┌──────────────┐
-│  Telegram    │     │  BullMQ   │     │  Telegram    │
-│  Source      │────▶│  Queue    │────▶│  Destination  │
-│  Channels    │     │  (Redis)  │     │  Channels    │
+│  Telegram   │     │  BullMQ   │     │  Telegram    │
+│  Source     │────▶│  Queue    │────▶│  Destination │
+│  Channels   │     │  (Redis)  │     │  Channels    │
 └─────────────┘     └───────────┘     └──────────────┘
    MTProto            Worker             Bot API
    (GramJS)           (dedup +           (grammY)
-                       rate limit)
+                      rate limit)
 ```
 
 **Apps:**
@@ -69,7 +69,7 @@ WORKER_HEALTH_PORT=3001
 # Telegram Bot (get from @BotFather)
 BOT_TOKEN=your-bot-token
 
-# API auth
+# API auth (min 32 chars — generate with: openssl rand -base64 32)
 JWT_SECRET=your-secret-minimum-32-characters-long
 
 # Telegram MTProto (get from https://my.telegram.org)
@@ -77,6 +77,14 @@ TELEGRAM_API_ID=12345678
 TELEGRAM_API_HASH=your-api-hash
 TELEGRAM_SESSION=your-gramjs-session-string
 ```
+
+**Getting `TELEGRAM_SESSION`**: This is a GramJS `StringSession` token that authenticates the MTProto userbot. To generate it, run:
+
+```bash
+npx telegram@latest
+```
+
+It will prompt for your `API_ID`, `API_HASH`, phone number, and 2FA password (if set). After login, it prints the session string — copy the full value into your `.env`.
 
 ### 4. Set up the database
 
@@ -132,6 +140,41 @@ cd apps/worker && pnpm start
 
 - API: `http://localhost:3000/health`
 - Worker: `http://localhost:3001/health`
+
+### Testing the Mini App locally
+
+The Mini App requires Telegram's `initData` for authentication, which is only available when opened inside the Telegram client. To test locally:
+
+1. **Expose your local API via a public URL** using [ngrok](https://ngrok.com/) or similar:
+
+```bash
+ngrok http 3000
+```
+
+2. **Set the Mini App URL** in BotFather:
+   - Open @BotFather → `/mybots` → select your bot → Bot Settings → Menu Button (or inline button)
+   - Set the URL to your ngrok HTTPS URL + `/app` (e.g., `https://abc123.ngrok.io/app`)
+
+3. **Start the API** (serves the built mini-app at `/app`):
+
+```bash
+cd apps/mini-app && pnpm build && cd ../..
+cd apps/api && pnpm dev
+```
+
+4. **Open the Mini App** from your bot in Telegram — it will load from your local API through the ngrok tunnel.
+
+**For faster frontend iteration**, run the Vite dev server alongside the API:
+
+```bash
+# Terminal 1: API (port 3000)
+cd apps/api && pnpm dev
+
+# Terminal 2: Mini App dev server (port 5173, proxies API to localhost:3000)
+cd apps/mini-app && pnpm dev
+```
+
+Then set the BotFather URL to `https://<ngrok-id>.ngrok.io` and configure ngrok to point to port 5173 instead. The Vite dev server proxies `/auth`, `/channels`, `/subscription-lists`, and `/health` to the API on port 3000.
 
 ## Testing
 
