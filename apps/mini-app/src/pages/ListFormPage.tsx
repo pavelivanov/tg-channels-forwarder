@@ -8,19 +8,12 @@ import { AddChannelForm } from '../components/AddChannelForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { showBackButton, hideBackButton } from '../lib/telegram';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import type { SourceChannel, SubscriptionList } from '../types';
-
-const sectionStyle: React.CSSProperties = {
-  marginBottom: 16,
-};
-
-const labelStyle: React.CSSProperties = {
-  display: 'block',
-  fontSize: 14,
-  fontWeight: 600,
-  color: 'var(--section-header-color)',
-  marginBottom: 4,
-};
 
 export function ListFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +28,7 @@ export function ListFormPage() {
   const [isLoadingList, setIsLoadingList] = useState(isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   // Load existing list in edit mode
   useEffect(() => {
@@ -91,7 +85,7 @@ export function ListFormPage() {
     setError(null);
 
     if (!name.trim()) {
-      setError('Name is required');
+      setNameError('Name is required');
       return;
     }
 
@@ -131,79 +125,85 @@ export function ListFormPage() {
   }
 
   return (
-    <div className="container">
-      <h2 style={{ marginBottom: 16 }}>{isEdit ? 'Edit List' : 'Create List'}</h2>
+    <div className="p-4">
+      <h2 className="text-lg font-semibold mb-4">{isEdit ? 'Edit List' : 'Create List'}</h2>
 
       <form onSubmit={handleSubmit}>
-        <div style={sectionStyle}>
-          <label htmlFor="list-name" style={labelStyle}>
-            List Name
-          </label>
-          <input
-            id="list-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="My subscription list"
-          />
-        </div>
+        <Card className="mb-4">
+          <CardContent className="space-y-4 p-4">
+            <div className="space-y-1">
+              <Label htmlFor="list-name">List Name</Label>
+              <Input
+                id="list-name"
+                type="text"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (nameError) setNameError(null);
+                }}
+                placeholder="My subscription list"
+                className={nameError ? 'border-destructive' : ''}
+              />
+              {nameError && <p className="text-sm text-destructive">{nameError}</p>}
+            </div>
 
-        <div style={sectionStyle}>
-          <label htmlFor="dest-username" style={labelStyle}>
-            Destination Channel
-          </label>
-          <input
-            id="dest-username"
-            type="text"
-            value={destinationUsername}
-            onChange={(e) => {
-              setDestinationUsername(e.target.value);
-              setError(null);
-            }}
-            placeholder="@mychannel"
-          />
-        </div>
+            <div className="space-y-1">
+              <Label htmlFor="dest-username">Destination Channel</Label>
+              <Input
+                id="dest-username"
+                type="text"
+                value={destinationUsername}
+                onChange={(e) => {
+                  setDestinationUsername(e.target.value);
+                  setError(null);
+                }}
+                placeholder="@mychannel"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-        <div style={sectionStyle}>
-          <label style={labelStyle}>Source Channels</label>
-          <ChannelSelector
-            channels={channels}
-            selectedIds={selectedIds}
-            onToggle={handleToggle}
-          />
-        </div>
+        <Card className="mb-4">
+          <CardContent className="space-y-4 p-4">
+            <div className="space-y-1">
+              <Label>Source Channels</Label>
+              <ChannelSelector
+                channels={channels}
+                selectedIds={selectedIds}
+                onToggle={handleToggle}
+              />
+            </div>
 
-        <div style={sectionStyle}>
-          <label style={labelStyle}>Add Channel</label>
-          <AddChannelForm
-            addChannel={addChannel}
-            onChannelAdded={handleChannelAdded}
-          />
-        </div>
+            <div className="space-y-1">
+              <Label>Add Channel</Label>
+              <AddChannelForm
+                addChannel={addChannel}
+                onChannelAdded={handleChannelAdded}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         <ErrorMessage message={error} />
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          style={{ marginTop: 16 }}
-        >
-          {isSubmitting ? 'Saving...' : isEdit ? 'Save' : 'Create'}
-        </button>
+        <Button type="submit" disabled={isSubmitting} className="w-full mt-4">
+          {isSubmitting ? (
+            <>
+              <Loader2 className="animate-spin" />
+              Saving...
+            </>
+          ) : isEdit ? 'Save' : 'Create'}
+        </Button>
 
         {isEdit && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={handleDelete}
-            style={{
-              marginTop: 12,
-              backgroundColor: 'transparent',
-              color: 'var(--destructive-color)',
-              border: '1px solid var(--destructive-color)',
-            }}
+            className="w-full mt-3 text-destructive"
           >
             Delete List
-          </button>
+          </Button>
         )}
       </form>
     </div>

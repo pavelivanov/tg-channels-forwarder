@@ -1,28 +1,6 @@
 import type { SourceChannel } from '../types';
-
-const listStyle: React.CSSProperties = {
-  maxHeight: 240,
-  overflowY: 'auto',
-  border: '1px solid var(--hint-color)',
-  borderRadius: 8,
-  padding: 8,
-  backgroundColor: 'var(--secondary-bg-color)',
-};
-
-const itemStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-  padding: '6px 4px',
-  fontSize: 14,
-};
-
-const countStyle: React.CSSProperties = {
-  fontSize: 13,
-  color: 'var(--hint-color)',
-  marginTop: 4,
-  textAlign: 'right',
-};
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface ChannelSelectorProps {
   channels: SourceChannel[];
@@ -41,9 +19,9 @@ export function ChannelSelector({
 
   return (
     <div>
-      <div style={listStyle}>
+      <div className="max-h-60 overflow-y-auto rounded-lg border bg-secondary p-2">
         {channels.length === 0 && (
-          <p className="hint" style={{ padding: 8 }}>
+          <p className="p-2 text-sm text-muted-foreground">
             No channels available
           </p>
         )}
@@ -51,24 +29,23 @@ export function ChannelSelector({
           const checked = selectedIds.has(ch.id);
           const disabled = !checked && atMax;
           return (
-            <label key={ch.id} style={{ ...itemStyle, opacity: disabled ? 0.5 : 1 }}>
-              <input
-                type="checkbox"
+            <div key={ch.id} className={`flex items-center gap-2 px-1 py-1.5 text-sm${disabled ? ' opacity-50' : ''}`}>
+              <Checkbox
+                id={`channel-${ch.id}`}
                 checked={checked}
                 disabled={disabled}
-                onChange={() => onToggle(ch.id)}
+                onCheckedChange={() => onToggle(ch.id)}
                 aria-label={ch.username}
-                style={{ width: 'auto' }}
               />
-              <span>
+              <Label htmlFor={`channel-${ch.id}`} className="font-normal cursor-pointer">
                 @{ch.username}
-                {ch.title && <span className="hint"> — {ch.title}</span>}
-              </span>
-            </label>
+                {ch.title && <span className="text-muted-foreground"> — {ch.title}</span>}
+              </Label>
+            </div>
           );
         })}
       </div>
-      <div style={countStyle}>
+      <div className="text-xs text-muted-foreground mt-1 text-right">
         {selectedIds.size} / {maxChannels}
       </div>
     </div>

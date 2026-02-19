@@ -2,22 +2,8 @@ import { useState } from 'react';
 import type { SourceChannel } from '../types';
 import { ErrorMessage } from './ErrorMessage';
 import { getApiErrorMessage } from '../hooks/useChannels';
-
-const formStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 8,
-  alignItems: 'flex-start',
-};
-
-const inputStyle: React.CSSProperties = {
-  flex: 1,
-};
-
-const addBtnStyle: React.CSSProperties = {
-  width: 'auto',
-  whiteSpace: 'nowrap',
-  flexShrink: 0,
-};
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface AddChannelFormProps {
   addChannel: (username: string) => Promise<SourceChannel>;
@@ -55,9 +41,9 @@ export function AddChannelForm({ addChannel, onChannelAdded }: AddChannelFormPro
 
   return (
     <div>
-      <div style={formStyle}>
-        <input
-          style={inputStyle}
+      <div className="flex items-start gap-2">
+        <Input
+          className="flex-1"
           type="text"
           placeholder="@username"
           value={username}
@@ -65,9 +51,16 @@ export function AddChannelForm({ addChannel, onChannelAdded }: AddChannelFormPro
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }}
           disabled={isSubmitting}
         />
-        <button type="button" onClick={handleSubmit} disabled={isSubmitting || !username.trim()} style={addBtnStyle}>
-          {isSubmitting ? '...' : 'Add'}
-        </button>
+        <Button
+          variant="secondary"
+          size="sm"
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !username.trim()}
+          className="shrink-0"
+        >
+          {isSubmitting ? 'Adding...' : 'Add'}
+        </Button>
       </div>
       <ErrorMessage message={error} />
     </div>

@@ -1,11 +1,18 @@
-import { defineConfig } from 'vite';
+import path from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   base: '/app',
   build: {
     outDir: 'dist',
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
   },
   server: {
     proxy: {
@@ -16,8 +23,8 @@ export default defineConfig({
     },
     allowedHosts: ['evolved-willing-bulldog.ngrok-free.app'],
   },
-  // test: {
-  //   environment: 'jsdom',
-  //   setupFiles: './test/setup.ts',
-  // },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./test/setup.ts'],
+  },
 });

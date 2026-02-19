@@ -33,6 +33,8 @@ Auto-generated from all feature plans. Last updated: 2026-02-16
 - PostgreSQL 16 via Prisma (existing schema, no migrations — `destinationUsername` field already exists) (015-destination-channel-name)
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + `telegram` (GramJS) ^2.26.22, `@prisma/client` v6, `@prisma/adapter-pg`, `tsx` ^4.19.4 (016-mtproto-seed-channels)
 - PostgreSQL 16 via Prisma (existing `SourceChannel` model, no schema changes) (016-mtproto-seed-channels)
+- TypeScript 5.8.3, React 19.1.0 + shadcn/ui (component source, copy-paste), Tailwind CSS v4 (`@tailwindcss/vite`), class-variance-authority, clsx, tailwind-merge, lucide-react, tw-animate-css (017-shadcn-mini-app-ui)
+- N/A (frontend-only, no data changes) (017-shadcn-mini-app-ui)
 
 - TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, @nestjs/terminus, nestjs-pino, pino, (001-monorepo-scaffold)
 
@@ -52,9 +54,9 @@ npm test && npm run lint
 TypeScript 5.x with `strict: true`, Node.js 20 LTS: Follow standard conventions
 
 ## Recent Changes
+- 017-shadcn-mini-app-ui: Added TypeScript 5.8.3, React 19.1.0 + shadcn/ui (component source, copy-paste), Tailwind CSS v4 (`@tailwindcss/vite`), class-variance-authority, clsx, tailwind-merge, lucide-react, tw-animate-css
 - 016-mtproto-seed-channels: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + `telegram` (GramJS) ^2.26.22, `@prisma/client` v6, `@prisma/adapter-pg`, `tsx` ^4.19.4
 - 015-destination-channel-name: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + NestJS 10, grammY (Bot API), React 19, Vite 6, class-validator
-- 014-e2e-integration-test: Added TypeScript 5.x with `strict: true`, Node.js 20 LTS + Vitest, ioredis, bullmq, grammy (mocked), @prisma/client, pino
 
 
 <!-- MANUAL ADDITIONS START -->
