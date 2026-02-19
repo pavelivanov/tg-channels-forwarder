@@ -1,0 +1,288 @@
+# TG Channels Forwarder
+
+A Telegram channel message forwarding system. Monitors source channels via MTProto userbot, forwards messages to destination channels via Bot API, with deduplication, rate limiting, and a Telegram Mini App for managing subscription lists.
+
+## Architecture
+
+```
+┌─────────────┐     ┌───────────┐     ┌──────────────┐
+│  Telegram    │     │  BullMQ   │     │  Telegram    │
+│  Source      │────▶│  Queue    │────▶│  Destination  │
+│  Channels    │     │  (Redis)  │     │  Channels    │
+└─────────────┘     └───────────┘     └──────────────┘
+   MTProto            Worker             Bot API
+   (GramJS)           (dedup +           (grammY)
+                       rate limit)
+```
+
+**Apps:**
+- `apps/api` — NestJS REST API (auth, channels, subscription lists, serves mini-app)
+- `apps/worker` — Background worker (listener, forwarder, dedup, rate limiter)
+- `apps/mini-app` — React Telegram Mini App (manage subscription lists)
+
+**Packages:**
+- `packages/shared` — Shared types, constants, queue definitions, dedup utilities
+- `packages/tsconfig` — Shared TypeScript configuration
+- `packages/eslint-config` — Shared ESLint configuration
+
+## Prerequisites
+
+- Node.js 22+
+- pnpm 10+
+- Docker and Docker Compose
+
+## Local Development
+
+### 1. Start infrastructure
+
+```bash
+docker compose up -d postgres redis
+```
+
+Wait until both are healthy:
+
+```bash
+docker compose ps
+```
+
+### 2. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your credentials:
+
+```env
+NODE_ENV=development
+PORT=3000
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aggregator?schema=public
+REDIS_URL=redis://localhost:6379
+WORKER_HEALTH_PORT=3001
+
+# Telegram Bot (get from @BotFather)
+BOT_TOKEN=your-bot-token
+
+# API auth
+JWT_SECRET=your-secret-minimum-32-characters-long
+
+# Telegram MTProto (get from https://my.telegram.org)
+TELEGRAM_API_ID=12345678
+TELEGRAM_API_HASH=your-api-hash
+TELEGRAM_SESSION=your-gramjs-session-string
+```
+
+### 4. Set up the database
+
+```bash
+cd apps/api
+pnpm exec prisma migrate deploy
+pnpm exec prisma generate
+cd ../..
+```
+
+Generate the worker's Prisma client too:
+
+```bash
+cd apps/worker
+pnpm exec prisma generate
+cd ../..
+```
+
+### 5. Build all packages
+
+```bash
+pnpm build
+```
+
+### 6. Start services in development mode
+
+Run each in a separate terminal:
+
+```bash
+# Terminal 1: API (port 3000)
+cd apps/api && pnpm dev
+
+# Terminal 2: Worker
+cd apps/worker && pnpm dev
+
+# Terminal 3: Mini App (port 5173)
+cd apps/mini-app && pnpm dev
+```
+
+Or build and run production-like:
+
+```bash
+pnpm build
+
+# Terminal 1
+cd apps/api && pnpm start
+
+# Terminal 2
+cd apps/worker && pnpm start
+```
+
+### Health checks
+
+- API: `http://localhost:3000/health`
+- Worker: `http://localhost:3001/health`
+
+## Testing
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests for a specific app
+pnpm turbo run test --filter=@aggregator/api
+pnpm turbo run test --filter=@aggregator/worker
+pnpm turbo run test --filter=@aggregator/mini-app
+
+# Lint
+pnpm lint
+
+# Format check
+pnpm format:check
+```
+
+Tests require Docker Compose services running (PostgreSQL + Redis) for integration tests.
+
+For manual end-to-end testing with real Telegram channels, see [docs/MANUAL_TESTING.md](docs/MANUAL_TESTING.md).
+
+## Production Deployment
+
+### Option A: Docker Compose (simplest)
+
+1. Create a `.env` file with production values on your server:
+
+```env
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=postgresql://user:password@postgres:5432/aggregator?schema=public
+REDIS_URL=redis://redis:6379
+WORKER_HEALTH_PORT=3001
+BOT_TOKEN=your-bot-token
+JWT_SECRET=your-production-secret-min-32-chars
+TELEGRAM_API_ID=12345678
+TELEGRAM_API_HASH=your-api-hash
+TELEGRAM_SESSION=your-gramjs-session-string
+```
+
+2. Build and start all services:
+
+```bash
+docker compose up -d --build
+```
+
+This starts 5 services:
+- **postgres** — PostgreSQL 16 on port 5432
+- **redis** — Redis 7 on port 6379
+- **api** — NestJS API on port 3000 (includes mini-app at `/app`)
+- **worker** — Background worker (health on port 3001)
+- **mini-app** — React SPA via nginx on port 8080
+
+3. Run database migrations:
+
+```bash
+docker compose exec api npx prisma migrate deploy
+```
+
+4. Verify services are healthy:
+
+```bash
+docker compose ps
+curl http://localhost:3000/health
+```
+
+### Option B: Build Docker images individually
+
+Each app has a multi-stage Dockerfile that produces a minimal production image:
+
+```bash
+# Build API image (also includes mini-app static files at /app)
+docker build -f apps/api/Dockerfile -t tg-forwarder-api .
+
+# Build Worker image
+docker build -f apps/worker/Dockerfile -t tg-forwarder-worker .
+
+# Build Mini App image (standalone nginx, optional)
+docker build -f apps/mini-app/Dockerfile -t tg-forwarder-mini-app .
+```
+
+Run with your own orchestration (Kubernetes, ECS, etc.):
+
+```bash
+# API
+docker run -d \
+  -p 3000:3000 \
+  -e NODE_ENV=production \
+  -e PORT=3000 \
+  -e DATABASE_URL=postgresql://... \
+  -e REDIS_URL=redis://... \
+  -e BOT_TOKEN=... \
+  -e JWT_SECRET=... \
+  tg-forwarder-api
+
+# Worker
+docker run -d \
+  -e NODE_ENV=production \
+  -e DATABASE_URL=postgresql://... \
+  -e REDIS_URL=redis://... \
+  -e BOT_TOKEN=... \
+  -e TELEGRAM_API_ID=... \
+  -e TELEGRAM_API_HASH=... \
+  -e TELEGRAM_SESSION=... \
+  -e WORKER_HEALTH_PORT=3001 \
+  tg-forwarder-worker
+```
+
+### Environment Variables Reference
+
+| Variable | Required By | Description |
+|----------|------------|-------------|
+| `DATABASE_URL` | api, worker | PostgreSQL connection string |
+| `REDIS_URL` | api, worker | Redis connection string |
+| `BOT_TOKEN` | api, worker | Telegram bot token from @BotFather |
+| `JWT_SECRET` | api | Secret for JWT signing (min 32 chars) |
+| `TELEGRAM_API_ID` | worker | Telegram API ID from my.telegram.org |
+| `TELEGRAM_API_HASH` | worker | Telegram API hash from my.telegram.org |
+| `TELEGRAM_SESSION` | worker | GramJS session string for MTProto userbot |
+| `PORT` | api | API server port (default: 3000) |
+| `WORKER_HEALTH_PORT` | worker | Worker health check port (default: 3001) |
+| `NODE_ENV` | api, worker | Environment: development, production, test |
+| `LOG_LEVEL` | api, worker | Optional: trace, debug, info, warn, error, fatal |
+
+## Project Structure
+
+```
+tg-channels-forwarder/
+├── apps/
+│   ├── api/                  # NestJS REST API
+│   │   ├── prisma/           # Prisma schema and migrations
+│   │   ├── src/              # Source code
+│   │   ├── test/             # Tests
+│   │   └── Dockerfile
+│   ├── worker/               # Background job worker
+│   │   ├── src/              # Source code
+│   │   ├── test/             # Tests (unit + e2e)
+│   │   └── Dockerfile
+│   └── mini-app/             # React Telegram Mini App
+│       ├── src/              # Source code
+│       ├── test/             # Tests
+│       └── Dockerfile
+├── packages/
+│   ├── shared/               # Shared types and utilities
+│   ├── tsconfig/             # Shared TypeScript config
+│   └── eslint-config/        # Shared ESLint config
+├── docs/                     # Documentation
+├── specs/                    # Feature specifications
+├── docker-compose.yml        # Local dev + production compose
+├── turbo.json                # Turborepo pipeline config
+└── pnpm-workspace.yaml       # pnpm workspace config
+```
