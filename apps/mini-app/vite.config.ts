@@ -16,9 +16,8 @@ export default defineConfig({
     },
     allowedHosts: ['8197-102-165-76-187.ngrok-free.app'],
   },
-  // test: {
-  //   environment: 'jsdom',
-  //   setupFiles: './test/setup.ts',
-  //   globals: true,
-  // },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './test/setup.ts',
+  },
 });

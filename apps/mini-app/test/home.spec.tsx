@@ -7,7 +7,6 @@ const mockLists: SubscriptionList[] = [
   {
     id: '1',
     name: 'My List',
-    destinationChannelId: -1001234567890,
     destinationUsername: 'destchannel',
     isActive: true,
     sourceChannels: [
@@ -30,7 +29,6 @@ const mockLists: SubscriptionList[] = [
   {
     id: '2',
     name: 'Inactive List',
-    destinationChannelId: -1009999999999,
     destinationUsername: 'otherchannel',
     isActive: false,
     sourceChannels: [],

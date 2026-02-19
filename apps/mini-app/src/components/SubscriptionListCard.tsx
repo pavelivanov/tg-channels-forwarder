@@ -67,7 +67,7 @@ export function SubscriptionListCard({ list }: SubscriptionListCardProps) {
         <span style={badgeStyle}>{list.isActive ? 'Active' : 'Inactive'}</span>
       </div>
       <div style={detailStyle}>
-        {list.destinationUsername ? `@${list.destinationUsername}` : `ID: ${list.destinationChannelId}`}
+        {list.destinationUsername ? `@${list.destinationUsername}` : 'No destination'}
         {' \u00B7 '}
         {channelText}
       </div>

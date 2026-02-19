@@ -24,7 +24,6 @@ export interface SourceChannel {
 export interface SubscriptionList {
   id: string;
   name: string;
-  destinationChannelId: number;
   destinationUsername: string | null;
   isActive: boolean;
   sourceChannels: SourceChannel[];
