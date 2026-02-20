@@ -19,10 +19,15 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 COPY --from=installer /app/apps/api/dist ./apps/api/dist
 COPY --from=installer /app/apps/api/package.json ./apps/api/package.json
+COPY --from=installer /app/apps/api/prisma ./apps/api/prisma
 COPY --from=installer /app/apps/mini-app/dist ./apps/mini-app/dist
 COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/packages/shared/dist ./packages/shared/dist
 COPY --from=installer /app/packages/shared/package.json ./packages/shared/package.json
+# Expose prisma CLI for Railway preDeployCommand (pnpm nests it in .pnpm/)
+RUN PRISMA_PKG=$(ls node_modules/.pnpm/ | grep '^prisma@' | head -1) && \
+    ln -s ".pnpm/${PRISMA_PKG}/node_modules/prisma" node_modules/prisma && \
+    ln -s "../.pnpm/${PRISMA_PKG}/node_modules/prisma/build/index.js" node_modules/.bin/prisma
 USER nestjs
 EXPOSE 3000
 CMD ["node", "apps/api/dist/main.js"]
