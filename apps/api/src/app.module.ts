@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -36,7 +37,7 @@ import { validate } from './env.schema.ts';
       exclude: [{ method: RequestMethod.ALL, path: 'health' }],
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'mini-app', 'dist'),
+      rootPath: join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'mini-app', 'dist'),
       serveRoot: '/app',
       serveStaticOptions: { index: false },
       renderPath: '/app*',
