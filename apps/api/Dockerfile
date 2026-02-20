@@ -17,13 +17,15 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
+COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/apps/api/dist ./apps/api/dist
 COPY --from=installer /app/apps/api/package.json ./apps/api/package.json
+COPY --from=installer /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=installer /app/apps/api/prisma ./apps/api/prisma
 COPY --from=installer /app/apps/mini-app/dist ./apps/mini-app/dist
-COPY --from=installer /app/node_modules ./node_modules
 COPY --from=installer /app/packages/shared/dist ./packages/shared/dist
 COPY --from=installer /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=installer /app/packages/shared/node_modules ./packages/shared/node_modules
 # Expose prisma CLI for Railway preDeployCommand (pnpm nests it in .pnpm/)
 RUN PRISMA_PKG=$(ls node_modules/.pnpm/ | grep '^prisma@' | head -1) && \
     ln -s ".pnpm/${PRISMA_PKG}/node_modules/prisma" node_modules/prisma && \
