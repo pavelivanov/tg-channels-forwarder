@@ -249,7 +249,23 @@ For manual end-to-end testing with real Telegram channels, see [docs/MANUAL_TEST
 
 ## Production Deployment
 
-### Option A: Docker Compose (simplest)
+### Option A: Railway (recommended)
+
+Deploy to [Railway](https://railway.app) with managed PostgreSQL and Redis:
+
+1. Create a Railway project from the GitHub repo
+2. Add PostgreSQL and Redis database services
+3. Add a second app service for the worker (same repo, config: `/apps/worker/railway.toml`)
+4. Set the API service config to `/apps/api/railway.toml`
+5. Configure shared environment variables (`BOT_TOKEN`, `JWT_SECRET`, `TELEGRAM_*`)
+6. Set per-service variables (`DATABASE_URL`, `REDIS_URL` via Railway references)
+7. Push to `main` — Railway auto-builds, runs migrations, and deploys
+
+Database migrations run automatically via `preDeployCommand` before the API starts. Health checks ensure zero-downtime deploys.
+
+For the full step-by-step guide, see [docs/RAILWAY.md](docs/RAILWAY.md).
+
+### Option B: Docker Compose
 
 1. Create a `.env` file with production values on your server:
 
@@ -292,7 +308,7 @@ docker compose ps
 curl http://localhost:3000/health
 ```
 
-### Option B: Build Docker images individually
+### Option C: Build Docker images individually
 
 Each app has a multi-stage Dockerfile that produces a minimal production image:
 
