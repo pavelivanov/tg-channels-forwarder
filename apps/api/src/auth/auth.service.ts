@@ -99,9 +99,7 @@ export class AuthService {
 
   async authenticate(initDataRaw: string): Promise<AuthResponse> {
     const webAppUser = this.validateInitData(initDataRaw);
-    console.log(111, webAppUser);
     const user = await this.upsertUser(webAppUser);
-    console.log(222, user);
 
     const payload = {
       sub: user.id,
