@@ -133,6 +133,15 @@ export class SubscriptionListsService {
 
   // --- US1: Browse lists ---
 
+  async findOne(id: string, userId: string): Promise<SubscriptionListResponse> {
+    const existing = await this.findListByIdAndUser(id, userId);
+    if (!existing) {
+      throw new NotFoundException('Subscription list not found');
+    }
+    const full = await this.fetchListWithChannels(id);
+    return this.formatListResponse(full);
+  }
+
   async findAllActive(userId: string): Promise<SubscriptionListResponse[]> {
     const lists = await this.prisma.subscriptionList.findMany({
       where: { userId, isActive: true },

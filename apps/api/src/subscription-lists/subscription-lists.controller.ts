@@ -28,6 +28,14 @@ export class SubscriptionListsController {
     return this.service.findAllActive(req.user.sub);
   }
 
+  @Get(':id')
+  findOne(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.service.findOne(id, req.user.sub);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(
