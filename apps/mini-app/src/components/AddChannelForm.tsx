@@ -1,23 +1,10 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { SourceChannel } from '../types';
 import { ErrorMessage } from './ErrorMessage';
 import { getApiErrorMessage } from '../hooks/useChannels';
-
-const formStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 8,
-  alignItems: 'flex-start',
-};
-
-const inputStyle: React.CSSProperties = {
-  flex: 1,
-};
-
-const addBtnStyle: React.CSSProperties = {
-  width: 'auto',
-  whiteSpace: 'nowrap',
-  flexShrink: 0,
-};
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 interface AddChannelFormProps {
   addChannel: (username: string) => Promise<SourceChannel>;
@@ -46,6 +33,7 @@ export function AddChannelForm({ addChannel, onChannelAdded }: AddChannelFormPro
       const channel = await addChannel(cleaned);
       onChannelAdded(channel);
       setUsername('');
+      toast.success(`Channel @${cleaned} added`);
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -55,9 +43,9 @@ export function AddChannelForm({ addChannel, onChannelAdded }: AddChannelFormPro
 
   return (
     <div>
-      <div style={formStyle}>
-        <input
-          style={inputStyle}
+      <div className="flex gap-2 items-start">
+        <Input
+          className="flex-1"
           type="text"
           placeholder="@username"
           value={username}
@@ -65,9 +53,15 @@ export function AddChannelForm({ addChannel, onChannelAdded }: AddChannelFormPro
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }}
           disabled={isSubmitting}
         />
-        <button type="button" onClick={handleSubmit} disabled={isSubmitting || !username.trim()} style={addBtnStyle}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={handleSubmit}
+          disabled={isSubmitting || !username.trim()}
+          className="shrink-0"
+        >
           {isSubmitting ? '...' : 'Add'}
-        </button>
+        </Button>
       </div>
       <ErrorMessage message={error} />
     </div>

@@ -1,36 +1,22 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Plus, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { useSubscriptionLists } from '../hooks/useSubscriptionLists';
 import { SubscriptionListCard } from '../components/SubscriptionListCard';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { ErrorMessage } from '../components/ErrorMessage';
-
-const headerStyle: React.CSSProperties = {
-  color: 'var(--section-header-color)',
-  fontSize: 14,
-  fontWeight: 600,
-  textTransform: 'uppercase',
-  letterSpacing: 0.5,
-  marginBottom: 8,
-};
-
-const fabStyle: React.CSSProperties = {
-  position: 'fixed',
-  bottom: 24,
-  left: 16,
-  right: 16,
-};
-
-const premiumLabelStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: 'var(--hint-color)',
-  marginTop: 4,
-  textAlign: 'center',
-};
 
 export function HomePage() {
-  const { lists, isLoading, error } = useSubscriptionLists();
+  const { lists, isLoading, error, refetch } = useSubscriptionLists();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -38,8 +24,12 @@ export function HomePage() {
 
   if (error) {
     return (
-      <div className="container">
-        <ErrorMessage message={error} />
+      <div className="flex flex-col items-center justify-center gap-4 py-16 text-center px-4">
+        <p className="text-destructive text-sm">{error}</p>
+        <Button variant="outline" size="sm" onClick={refetch}>
+          <RefreshCw className="size-4 mr-2" />
+          Try again
+        </Button>
       </div>
     );
   }
@@ -49,14 +39,18 @@ export function HomePage() {
   }
 
   return (
-    <div className="container" style={{ paddingBottom: 80 }}>
-      <div style={headerStyle}>Your Lists</div>
+    <div className="p-4 pb-20">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+        Your Lists
+      </div>
       {lists.map((list) => (
         <SubscriptionListCard key={list.id} list={list} />
       ))}
-      <div style={fabStyle}>
-        <button onClick={() => navigate('/lists/new')}>Create List</button>
-        <div style={premiumLabelStyle} />
+      <div className="fixed bottom-6 left-4 right-4">
+        <Button className="w-full" onClick={() => navigate('/lists/new')}>
+          <Plus className="size-4 mr-2" />
+          Create List
+        </Button>
       </div>
     </div>
   );
