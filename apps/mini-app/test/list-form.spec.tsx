@@ -4,6 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { SubscriptionList, SourceChannel } from '../src/types';
 
+const mockToast = Object.assign(vi.fn(), {
+  success: vi.fn(),
+  error: vi.fn(),
+});
+vi.mock('sonner', () => ({ toast: mockToast }));
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -44,6 +50,9 @@ const existingList: SubscriptionList = {
 describe('ListFormPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockToast.mockClear();
+    mockToast.success.mockClear();
+    mockToast.error.mockClear();
     mockApi.get.mockImplementation((path: string) => {
       if (path === '/channels') return Promise.resolve(mockChannels);
       if (path.startsWith('/subscription-lists/')) return Promise.resolve(existingList);
@@ -142,7 +151,7 @@ describe('ListFormPage', () => {
     );
   });
 
-  it('shows validation errors from backend inline', async () => {
+  it('shows backend errors via toast', async () => {
     mockApi.post.mockRejectedValueOnce({
       statusCode: 400,
       message: 'Channel not found or bot has no access',
@@ -164,10 +173,12 @@ describe('ListFormPage', () => {
     const submitBtn = screen.getByRole('button', { name: /create/i });
     await user.click(submitBtn);
 
-    expect(await screen.findByText(/channel not found/i)).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith('Channel not found or bot has no access');
+    });
   });
 
-  it('shows limit error on 403', async () => {
+  it('shows limit error via toast on 403', async () => {
     mockApi.post.mockRejectedValueOnce({
       statusCode: 403,
       message: 'Maximum list limit reached',
@@ -189,7 +200,9 @@ describe('ListFormPage', () => {
     const submitBtn = screen.getByRole('button', { name: /create/i });
     await user.click(submitBtn);
 
-    expect(await screen.findByText(/maximum list limit/i)).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith('Maximum list limit reached');
+    });
   });
 
   it('navigates to Home on successful create', async () => {

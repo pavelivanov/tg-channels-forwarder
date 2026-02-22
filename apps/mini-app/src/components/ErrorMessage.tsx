@@ -5,5 +5,5 @@ interface ErrorMessageProps {
 export function ErrorMessage({ message }: ErrorMessageProps) {
   if (!message) return null;
 
-  return <p className="error">{message}</p>;
+  return <p className="text-destructive text-sm mt-1">{message}</p>;
 }

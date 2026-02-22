@@ -1,26 +1,29 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import WebApp from '@twa-dev/sdk';
+import { Loader2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useApi } from '../hooks/useApi';
 import { useChannels, getApiErrorMessage } from '../hooks/useChannels';
 import { ChannelSelector } from '../components/ChannelSelector';
 import { AddChannelForm } from '../components/AddChannelForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { ErrorMessage } from '../components/ErrorMessage';
 import { showBackButton, hideBackButton } from '../lib/telegram';
 import type { SourceChannel, SubscriptionList } from '../types';
-
-const sectionStyle: React.CSSProperties = {
-  marginBottom: 16,
-};
-
-const labelStyle: React.CSSProperties = {
-  display: 'block',
-  fontSize: 14,
-  fontWeight: 600,
-  color: 'var(--section-header-color)',
-  marginBottom: 4,
-};
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export function ListFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,7 +37,7 @@ export function ListFormPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoadingList, setIsLoadingList] = useState(isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Load existing list in edit mode
   useEffect(() => {
@@ -46,7 +49,7 @@ export function ListFormPage() {
         setDestinationUsername(list.destinationUsername ?? '');
         setSelectedIds(new Set(list.sourceChannels.map((ch) => ch.id)));
       })
-      .catch(() => setError('Failed to load list'))
+      .catch(() => toast.error('Failed to load list'))
       .finally(() => setIsLoadingList(false));
   }, [id, api]);
 
@@ -74,36 +77,36 @@ export function ListFormPage() {
 
   async function handleDelete() {
     if (!id) return;
+    try {
+      await api.del(`/subscription-lists/${id}`);
+      toast.success('List deleted');
+      navigate('/');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err));
+    }
+  }
 
-    WebApp.showConfirm('Delete this subscription list?', async (confirmed) => {
-      if (!confirmed) return;
-      try {
-        await api.del(`/subscription-lists/${id}`);
-        navigate('/');
-      } catch (err) {
-        setError(getApiErrorMessage(err));
-      }
-    });
+  function validate(): boolean {
+    const errors: Record<string, string> = {};
+
+    if (!name.trim()) {
+      errors.name = 'Name is required';
+    }
+    if (!destinationUsername.trim()) {
+      errors.destination = 'Destination channel is required';
+    }
+    if (selectedIds.size === 0) {
+      errors.channels = 'Select at least one source channel';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
 
-    if (!name.trim()) {
-      setError('Name is required');
-      return;
-    }
-
-    if (!destinationUsername.trim()) {
-      setError('Destination channel is required');
-      return;
-    }
-
-    if (selectedIds.size === 0) {
-      setError('Select at least one source channel');
-      return;
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
     try {
@@ -115,12 +118,14 @@ export function ListFormPage() {
 
       if (isEdit) {
         await api.patch(`/subscription-lists/${id}`, payload);
+        toast.success('List saved');
       } else {
         await api.post('/subscription-lists', payload);
+        toast.success('List created');
       }
       navigate('/');
     } catch (err) {
-      setError(getApiErrorMessage(err));
+      toast.error(getApiErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -131,79 +136,83 @@ export function ListFormPage() {
   }
 
   return (
-    <div className="container">
-      <h2 style={{ marginBottom: 16 }}>{isEdit ? 'Edit List' : 'Create List'}</h2>
+    <div className="p-4">
+      <h2 className="text-lg font-semibold mb-4">{isEdit ? 'Edit List' : 'Create List'}</h2>
 
-      <form onSubmit={handleSubmit}>
-        <div style={sectionStyle}>
-          <label htmlFor="list-name" style={labelStyle}>
-            List Name
-          </label>
-          <input
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-1.5">
+          <Label htmlFor="list-name">List Name</Label>
+          <Input
             id="list-name"
             type="text"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => { setName(e.target.value); setFieldErrors((p) => ({ ...p, name: '' })); }}
             placeholder="My subscription list"
           />
+          {fieldErrors.name && <p className="text-destructive text-sm">{fieldErrors.name}</p>}
         </div>
 
-        <div style={sectionStyle}>
-          <label htmlFor="dest-username" style={labelStyle}>
-            Destination Channel
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="dest-username">Destination Channel</Label>
+          <Input
             id="dest-username"
             type="text"
             value={destinationUsername}
-            onChange={(e) => {
-              setDestinationUsername(e.target.value);
-              setError(null);
-            }}
+            onChange={(e) => { setDestinationUsername(e.target.value); setFieldErrors((p) => ({ ...p, destination: '' })); }}
             placeholder="@mychannel"
           />
+          {fieldErrors.destination && <p className="text-destructive text-sm">{fieldErrors.destination}</p>}
         </div>
 
-        <div style={sectionStyle}>
-          <label style={labelStyle}>Source Channels</label>
+        <div className="space-y-1.5">
+          <Label>Source Channels</Label>
           <ChannelSelector
             channels={channels}
             selectedIds={selectedIds}
             onToggle={handleToggle}
           />
+          {fieldErrors.channels && <p className="text-destructive text-sm">{fieldErrors.channels}</p>}
         </div>
 
-        <div style={sectionStyle}>
-          <label style={labelStyle}>Add Channel</label>
+        <div className="space-y-1.5">
+          <Label>Add Channel</Label>
           <AddChannelForm
             addChannel={addChannel}
             onChannelAdded={handleChannelAdded}
           />
         </div>
 
-        <ErrorMessage message={error} />
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          style={{ marginTop: 16 }}
-        >
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="size-4 mr-2 animate-spin" />}
           {isSubmitting ? 'Saving...' : isEdit ? 'Save' : 'Create'}
-        </button>
+        </Button>
 
         {isEdit && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            style={{
-              marginTop: 12,
-              backgroundColor: 'transparent',
-              color: 'var(--destructive-color)',
-              border: '1px solid var(--destructive-color)',
-            }}
-          >
-            Delete List
-          </button>
+          <>
+            <Separator />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="w-full border-destructive text-destructive hover:bg-destructive/10">
+                  <Trash2 className="size-4 mr-2" />
+                  Delete List
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete subscription list?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete "{name || 'this list'}". This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
         )}
       </form>
     </div>

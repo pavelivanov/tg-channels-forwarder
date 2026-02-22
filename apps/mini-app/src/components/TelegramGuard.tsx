@@ -2,22 +2,12 @@ import { useAuth } from '../context/AuthContext';
 import { ErrorMessage } from './ErrorMessage';
 import { LoadingSpinner } from './LoadingSpinner';
 
-const guardStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  minHeight: '100vh',
-  padding: '32px',
-  textAlign: 'center',
-};
-
 export function TelegramGuard({ children }: { children: React.ReactNode }) {
   const { isLoading, isAuthenticated, error } = useAuth();
 
   if (isLoading) {
     return (
-      <div style={guardStyle}>
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
         <LoadingSpinner />
       </div>
     );
@@ -25,7 +15,7 @@ export function TelegramGuard({ children }: { children: React.ReactNode }) {
 
   if (error) {
     return (
-      <div style={guardStyle}>
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
         <ErrorMessage message={error} />
       </div>
     );
@@ -33,7 +23,7 @@ export function TelegramGuard({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return (
-      <div style={guardStyle}>
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
         <ErrorMessage message="Authentication failed. Please reopen the app." />
       </div>
     );
