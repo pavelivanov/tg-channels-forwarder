@@ -45,6 +45,7 @@ logger.info({ env: config.NODE_ENV }, 'Worker starting');
 // BullMQ connection (maxRetriesPerRequest: null required for Worker)
 const connection = new Redis(config.REDIS_URL, {
   maxRetriesPerRequest: null,
+  family: 0,
 });
 
 // Queues
