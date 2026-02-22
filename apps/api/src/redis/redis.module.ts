@@ -10,9 +10,7 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
     {
       provide: REDIS_CLIENT,
       useFactory: (config: ConfigService): Redis => {
-        return new Redis(config.get<string>('REDIS_URL')!, {
-          family: 0,
-        });
+        return new Redis(config.get<string>('REDIS_URL')!);
       },
       inject: [ConfigService],
     },
