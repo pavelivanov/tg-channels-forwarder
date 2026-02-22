@@ -39,7 +39,6 @@ import { validate } from './env.schema.ts';
     ServeStaticModule.forRoot({
       rootPath: join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'mini-app', 'dist'),
       serveRoot: '/app',
-      serveStaticOptions: { index: false },
       renderPath: '/app*',
     }),
     PrismaModule,
