@@ -11,6 +11,8 @@ export class ChannelOpsConsumer {
   constructor(
     private readonly channelManager: ChannelManager,
     logger: pino.Logger,
+    private readonly onChannelJoined?: (telegramId: number) => void,
+    private readonly onChannelLeft?: (telegramId: number) => void,
   ) {
     this.logger = logger.child({ service: 'ChannelOpsConsumer' });
   }
@@ -45,10 +47,15 @@ export class ChannelOpsConsumer {
     const { operation } = job.data;
 
     switch (operation) {
-      case 'join':
-        return this.channelManager.joinChannel(job.data.channelId, job.data.username!);
+      case 'join': {
+        const result = await this.channelManager.joinChannel(job.data.channelId, job.data.username!);
+        this.onChannelJoined?.(result.telegramId);
+        return result;
+      }
       case 'leave':
-        return this.channelManager.leaveChannel(job.data.telegramId!);
+        await this.channelManager.leaveChannel(job.data.telegramId!);
+        this.onChannelLeft?.(job.data.telegramId!);
+        return;
     }
   }
 

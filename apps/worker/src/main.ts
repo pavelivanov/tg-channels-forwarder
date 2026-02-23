@@ -108,7 +108,12 @@ const channelManager = new ChannelManager(
   prisma,
   logger,
 );
-const channelOpsConsumer = new ChannelOpsConsumer(channelManager, logger);
+const channelOpsConsumer = new ChannelOpsConsumer(
+  channelManager,
+  logger,
+  (telegramId) => listener.addChannel(telegramId),
+  (telegramId) => listener.removeChannel(telegramId),
+);
 channelOpsConsumer.startWorker(connection);
 
 // Channel cleanup (scheduled daily at 3:00 AM UTC)

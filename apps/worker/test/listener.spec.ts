@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Api } from 'telegram';
 import type { TelegramClient } from 'telegram';
-import type { NewMessageEvent } from 'telegram/events';
+import { NewMessage, type NewMessageEvent } from 'telegram/events';
 import type pino from 'pino';
 import type { ForwardJob } from '@aggregator/shared';
 import type { PrismaClient } from '../src/generated/prisma/client.ts';
@@ -197,6 +197,145 @@ describe('ListenerService', () => {
       await handler({ message } as unknown as NewMessageEvent);
 
       expect(mockProducer.enqueueMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('dynamic channel tracking', () => {
+    it('addChannel adds telegramId to active set and processes messages from it', async () => {
+      const mockClient = createMockClient();
+      const mockPrisma = createMockPrisma([
+        { telegramId: BigInt(100) },
+      ]);
+      const mockProducer = createMockProducer();
+
+      const service = new ListenerService(
+        { apiId: 1, apiHash: 'test', sessionString: 'valid' },
+        logger,
+        mockProducer as unknown as QueueProducer,
+        mockPrisma as unknown as PrismaClient,
+        mockClient as unknown as TelegramClient,
+      );
+
+      await service.start();
+
+      // Dynamically add channel 200
+      service.addChannel(200);
+
+      const handler = mockClient.addEventHandler.mock.calls[0][0] as (event: NewMessageEvent) => Promise<void>;
+      const message = createMockMessage(BigInt(200), 'Hello from new channel');
+      await handler({ message } as unknown as NewMessageEvent);
+
+      expect(mockProducer.enqueueMessage).toHaveBeenCalledOnce();
+    });
+
+    it('removeChannel removes telegramId from active set and ignores messages', async () => {
+      const mockClient = createMockClient();
+      const mockPrisma = createMockPrisma([
+        { telegramId: BigInt(100) },
+      ]);
+      const mockProducer = createMockProducer();
+
+      const service = new ListenerService(
+        { apiId: 1, apiHash: 'test', sessionString: 'valid' },
+        logger,
+        mockProducer as unknown as QueueProducer,
+        mockPrisma as unknown as PrismaClient,
+        mockClient as unknown as TelegramClient,
+      );
+
+      await service.start();
+
+      // Remove channel 100
+      service.removeChannel(100);
+
+      const handler = mockClient.addEventHandler.mock.calls[0][0] as (event: NewMessageEvent) => Promise<void>;
+      const message = createMockMessage(BigInt(100), 'Should be ignored after removal');
+      await handler({ message } as unknown as NewMessageEvent);
+
+      expect(mockProducer.enqueueMessage).not.toHaveBeenCalled();
+    });
+
+    it('event handler is registered without chats filter', async () => {
+      const mockClient = createMockClient();
+      const mockPrisma = createMockPrisma([
+        { telegramId: BigInt(100) },
+      ]);
+      const mockProducer = createMockProducer();
+
+      const service = new ListenerService(
+        { apiId: 1, apiHash: 'test', sessionString: 'valid' },
+        logger,
+        mockProducer as unknown as QueueProducer,
+        mockPrisma as unknown as PrismaClient,
+        mockClient as unknown as TelegramClient,
+      );
+
+      await service.start();
+
+      const eventBuilder = mockClient.addEventHandler.mock.calls[0][1];
+      expect(eventBuilder).toBeInstanceOf(NewMessage);
+      // Verify no chats filter was passed — the internal chats array should be undefined
+      expect((eventBuilder as Record<string, unknown>).chats).toBeUndefined();
+    });
+
+    it('addChannel is idempotent — adding same channel twice does not duplicate messages', async () => {
+      const mockClient = createMockClient();
+      const mockPrisma = createMockPrisma([
+        { telegramId: BigInt(100) },
+      ]);
+      const mockProducer = createMockProducer();
+
+      const service = new ListenerService(
+        { apiId: 1, apiHash: 'test', sessionString: 'valid' },
+        logger,
+        mockProducer as unknown as QueueProducer,
+        mockPrisma as unknown as PrismaClient,
+        mockClient as unknown as TelegramClient,
+      );
+
+      await service.start();
+
+      // Add channel 200 twice
+      service.addChannel(200);
+      service.addChannel(200);
+
+      const handler = mockClient.addEventHandler.mock.calls[0][0] as (event: NewMessageEvent) => Promise<void>;
+      const message = createMockMessage(BigInt(200), 'Single message', { id: 1 });
+      await handler({ message } as unknown as NewMessageEvent);
+
+      expect(mockProducer.enqueueMessage).toHaveBeenCalledOnce();
+    });
+
+    it('after reconnect, dynamically-added channels are re-loaded from DB', async () => {
+      const mockClient = createMockClient();
+      const mockPrisma = createMockPrisma([
+        { telegramId: BigInt(100) },
+      ]);
+      const mockProducer = createMockProducer();
+
+      const service = new ListenerService(
+        { apiId: 1, apiHash: 'test', sessionString: 'valid' },
+        logger,
+        mockProducer as unknown as QueueProducer,
+        mockPrisma as unknown as PrismaClient,
+        mockClient as unknown as TelegramClient,
+      );
+
+      await service.start();
+
+      // Mock prisma to return channels 100 + 300 on next findMany call
+      mockPrisma.sourceChannel.findMany.mockResolvedValue([
+        { telegramId: BigInt(100) },
+        { telegramId: BigInt(300) },
+      ]);
+
+      await service.onReconnect();
+
+      const handler = mockClient.addEventHandler.mock.calls[0][0] as (event: NewMessageEvent) => Promise<void>;
+      const message = createMockMessage(BigInt(300), 'Hello from channel 300');
+      await handler({ message } as unknown as NewMessageEvent);
+
+      expect(mockProducer.enqueueMessage).toHaveBeenCalledOnce();
     });
   });
 

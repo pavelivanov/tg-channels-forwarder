@@ -72,4 +72,80 @@ describe('ChannelOpsConsumer', () => {
       } as unknown as Job<ChannelOpsJob>),
     ).rejects.toThrow('CHANNEL_PRIVATE');
   });
+
+  describe('channel tracking callbacks', () => {
+    it('invokes onChannelJoined callback with telegramId after successful join', async () => {
+      const onChannelJoined = vi.fn();
+      const consumer = new ChannelOpsConsumer(
+        mockManager as unknown as ChannelManager,
+        logger,
+        onChannelJoined,
+      );
+
+      await consumer.processJob({
+        data: {
+          operation: 'join',
+          channelId: 'uuid-1',
+          username: 'testchannel',
+        } as ChannelOpsJob,
+      } as unknown as Job<ChannelOpsJob>);
+
+      expect(onChannelJoined).toHaveBeenCalledWith(12345);
+    });
+
+    it('invokes onChannelLeft callback with telegramId after successful leave', async () => {
+      const onChannelLeft = vi.fn();
+      const consumer = new ChannelOpsConsumer(
+        mockManager as unknown as ChannelManager,
+        logger,
+        undefined,
+        onChannelLeft,
+      );
+
+      await consumer.processJob({
+        data: {
+          operation: 'leave',
+          telegramId: 67890,
+        } as ChannelOpsJob,
+      } as unknown as Job<ChannelOpsJob>);
+
+      expect(onChannelLeft).toHaveBeenCalledWith(67890);
+    });
+
+    it('does not invoke onChannelJoined callback when join fails', async () => {
+      mockManager.joinChannel.mockRejectedValue(new Error('CHANNEL_PRIVATE'));
+      const onChannelJoined = vi.fn();
+      const consumer = new ChannelOpsConsumer(
+        mockManager as unknown as ChannelManager,
+        logger,
+        onChannelJoined,
+      );
+
+      await expect(
+        consumer.processJob({
+          data: {
+            operation: 'join',
+            channelId: 'uuid-1',
+            username: 'privatechannel',
+          } as ChannelOpsJob,
+        } as unknown as Job<ChannelOpsJob>),
+      ).rejects.toThrow('CHANNEL_PRIVATE');
+
+      expect(onChannelJoined).not.toHaveBeenCalled();
+    });
+
+    it('works without callbacks (backward compatibility)', async () => {
+      const consumer = new ChannelOpsConsumer(mockManager as unknown as ChannelManager, logger);
+
+      await consumer.processJob({
+        data: {
+          operation: 'join',
+          channelId: 'uuid-1',
+          username: 'testchannel',
+        } as ChannelOpsJob,
+      } as unknown as Job<ChannelOpsJob>);
+
+      expect(mockManager.joinChannel).toHaveBeenCalledWith('uuid-1', 'testchannel');
+    });
+  });
 });

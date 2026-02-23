@@ -28,6 +28,7 @@ function createMockPrisma() {
     sourceChannel: {
       update: vi.fn().mockResolvedValue({}),
       delete: vi.fn().mockResolvedValue({}),
+      deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
   };
 }
@@ -97,7 +98,7 @@ describe('ChannelManager', () => {
       await vi.advanceTimersByTimeAsync(5000);
       await expect(resultPromise).rejects.toThrow('CHANNEL_PRIVATE');
 
-      expect(mockPrisma.sourceChannel.delete).toHaveBeenCalledWith({
+      expect(mockPrisma.sourceChannel.deleteMany).toHaveBeenCalledWith({
         where: { id: 'channel-uuid-1' },
       });
     });

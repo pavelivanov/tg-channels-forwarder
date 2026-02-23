@@ -55,11 +55,9 @@ export class ListenerService {
 
     await this.loadActiveChannels();
 
-    const channelIds = [...this.activeChannelIds];
-
     this.client.addEventHandler(
       (event: NewMessageEvent) => this.handleNewMessage(event),
-      new NewMessage({ chats: channelIds, incoming: true }),
+      new NewMessage({ incoming: true }),
     );
 
     this.logger.info(
@@ -88,6 +86,16 @@ export class ListenerService {
 
   setAlbumGrouper(grouper: { addMessage: (job: import('@aggregator/shared').ForwardJob) => void; clear: () => void }): void {
     this.albumGrouper = grouper;
+  }
+
+  addChannel(telegramId: number): void {
+    this.activeChannelIds.add(telegramId);
+    this.logger.info({ telegramId }, 'channel_added_to_listener');
+  }
+
+  removeChannel(telegramId: number): void {
+    this.activeChannelIds.delete(telegramId);
+    this.logger.info({ telegramId }, 'channel_removed_from_listener');
   }
 
   onDisconnect(): void {
