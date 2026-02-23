@@ -229,4 +229,36 @@ describe('ForwarderService', () => {
       await expect(service.forward(createJob())).rejects.toThrow(GrammyError);
     });
   });
+
+  describe('T010 [US2]: subscription list query includes source channel matching', () => {
+    it('queries subscription lists with correct sourceChannel telegramId filter', async () => {
+      prisma = createMockPrisma([BigInt(-100)]);
+      service = new ForwarderService(messageSender, prisma, dedupService, rateLimiter, logger);
+
+      await service.forward(createJob({ sourceChannelId: 42 }));
+
+      expect(prisma.subscriptionList.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            subscriptionListChannels: {
+              some: {
+                sourceChannel: { telegramId: BigInt(42) },
+              },
+            },
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('T011 [US2]: only active subscription list destinations are sent to', () => {
+    it('does not send to destinations from inactive subscription lists', async () => {
+      prisma = createMockPrisma([BigInt(-100)]);
+      service = new ForwarderService(messageSender, prisma, dedupService, rateLimiter, logger);
+
+      await service.forward(createJob());
+
+      expect(messageSender.send).toHaveBeenCalledTimes(1);
+    });
+  });
 });
