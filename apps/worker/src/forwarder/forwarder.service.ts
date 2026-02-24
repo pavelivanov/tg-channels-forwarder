@@ -48,6 +48,14 @@ export class ForwarderService {
       return;
     }
 
+    const sourceChannel = await this.prisma.sourceChannel.findFirst({
+      where: { telegramId: BigInt(sourceChannelId) },
+      select: { username: true, title: true },
+    });
+    const sourceLabel = sourceChannel?.username
+      ? `@${sourceChannel.username}`
+      : sourceChannel?.title;
+
     for (const destinationChannelId of uniqueDestinations) {
       const isDup = await this.dedupService.isDuplicate(destinationChannelId, text);
       if (isDup) {
@@ -59,7 +67,7 @@ export class ForwarderService {
       }
 
       await this.rateLimiter.execute(destinationChannelId, async () => {
-        await this.messageSender.send(destinationChannelId, job);
+        await this.messageSender.send(destinationChannelId, job, sourceLabel ?? undefined);
       });
 
       await this.dedupService.markAsForwarded(destinationChannelId, text);

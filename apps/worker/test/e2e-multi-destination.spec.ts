@@ -208,7 +208,7 @@ describe('E2E: Multi-Destination Forwarding', () => {
     expect(mockApi.sendMessage).toHaveBeenCalledOnce();
     expect(mockApi.sendMessage).toHaveBeenCalledWith(
       DEST_B,
-      job.text,
+      expect.stringContaining(job.text!),
       expect.objectContaining({}),
     );
   });
