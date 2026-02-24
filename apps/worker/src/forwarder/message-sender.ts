@@ -78,31 +78,58 @@ export class MessageSender {
     await this.api.sendMediaGroup(chatId, media);
   }
 
-  async send(chatId: number, job: ForwardJob): Promise<void> {
+  private appendSuffix(content: string | undefined, suffix: string, limit: number): string {
+    const base = content ?? '';
+    const combined = base + suffix;
+    if (combined.length <= limit) return combined;
+    return base.slice(0, limit - suffix.length) + suffix;
+  }
+
+  async send(chatId: number, job: ForwardJob, sourceLabel?: string): Promise<void> {
+    const suffix = sourceLabel ? `\n\nfrom ${sourceLabel}` : '';
+
     if (job.mediaGroup && job.mediaGroup.length > 0) {
-      await this.sendAlbum(chatId, job.mediaGroup);
+      if (suffix) {
+        const first = job.mediaGroup[0];
+        const patched = { ...first, caption: this.appendSuffix(first.caption, suffix, 1024) };
+        await this.sendAlbum(chatId, [patched, ...job.mediaGroup.slice(1)]);
+      } else {
+        await this.sendAlbum(chatId, job.mediaGroup);
+      }
       return;
     }
 
     switch (job.mediaType) {
-      case 'photo':
-        await this.sendPhoto(chatId, job.mediaFileId!, job.caption, job.captionEntities);
+      case 'photo': {
+        const caption = suffix ? this.appendSuffix(job.caption, suffix, 1024) : job.caption;
+        await this.sendPhoto(chatId, job.mediaFileId!, caption, job.captionEntities);
         break;
-      case 'video':
-        await this.sendVideo(chatId, job.mediaFileId!, job.caption, job.captionEntities);
+      }
+      case 'video': {
+        const caption = suffix ? this.appendSuffix(job.caption, suffix, 1024) : job.caption;
+        await this.sendVideo(chatId, job.mediaFileId!, caption, job.captionEntities);
         break;
-      case 'document':
-        await this.sendDocument(chatId, job.mediaFileId!, job.caption, job.captionEntities);
+      }
+      case 'document': {
+        const caption = suffix ? this.appendSuffix(job.caption, suffix, 1024) : job.caption;
+        await this.sendDocument(chatId, job.mediaFileId!, caption, job.captionEntities);
         break;
-      case 'animation':
-        await this.sendAnimation(chatId, job.mediaFileId!, job.caption, job.captionEntities);
+      }
+      case 'animation': {
+        const caption = suffix ? this.appendSuffix(job.caption, suffix, 1024) : job.caption;
+        await this.sendAnimation(chatId, job.mediaFileId!, caption, job.captionEntities);
         break;
-      case 'audio':
-        await this.sendAudio(chatId, job.mediaFileId!, job.caption, job.captionEntities);
+      }
+      case 'audio': {
+        const caption = suffix ? this.appendSuffix(job.caption, suffix, 1024) : job.caption;
+        await this.sendAudio(chatId, job.mediaFileId!, caption, job.captionEntities);
         break;
-      default:
-        await this.sendText(chatId, job.text ?? '', job.entities);
+      }
+      default: {
+        const text = suffix ? this.appendSuffix(job.text, suffix, 4096) : (job.text ?? '');
+        await this.sendText(chatId, text, job.entities);
         break;
+      }
     }
   }
 }

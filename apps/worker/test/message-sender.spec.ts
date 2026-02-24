@@ -535,4 +535,121 @@ describe('MessageSender', () => {
       expect(calledMedia[0].caption).toBe('Solo');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // sourceLabel attribution
+  // -------------------------------------------------------------------------
+
+  describe('send() with sourceLabel', () => {
+    it('appends sourceLabel to text message', async () => {
+      const job = createJob({ text: 'Hello' });
+
+      await sender.send(CHAT_ID, job, '@mychannel');
+
+      expect(api.sendMessage).toHaveBeenCalledWith(
+        CHAT_ID,
+        'Hello\n\nfrom @mychannel',
+        { entities: undefined },
+      );
+    });
+
+    it('appends sourceLabel to photo caption', async () => {
+      const job = createJob({
+        mediaType: 'photo',
+        mediaFileId: 'photo:1:1',
+        caption: 'Nice pic',
+      });
+
+      await sender.send(CHAT_ID, job, '@mychannel');
+
+      expect(api.sendPhoto).toHaveBeenCalledWith(
+        CHAT_ID,
+        'photo:1:1',
+        { caption: 'Nice pic\n\nfrom @mychannel', caption_entities: undefined },
+      );
+    });
+
+    it('appends sourceLabel to video caption', async () => {
+      const job = createJob({
+        mediaType: 'video',
+        mediaFileId: 'video:1:1',
+        caption: 'Watch this',
+      });
+
+      await sender.send(CHAT_ID, job, '@mychannel');
+
+      expect(api.sendVideo).toHaveBeenCalledWith(
+        CHAT_ID,
+        'video:1:1',
+        { caption: 'Watch this\n\nfrom @mychannel', caption_entities: undefined },
+      );
+    });
+
+    it('appends sourceLabel to media with no caption', async () => {
+      const job = createJob({
+        mediaType: 'photo',
+        mediaFileId: 'photo:1:1',
+      });
+
+      await sender.send(CHAT_ID, job, '@mychannel');
+
+      expect(api.sendPhoto).toHaveBeenCalledWith(
+        CHAT_ID,
+        'photo:1:1',
+        { caption: '\n\nfrom @mychannel', caption_entities: undefined },
+      );
+    });
+
+    it('appends sourceLabel to first item of album', async () => {
+      const mediaGroup: ForwardJob[] = [
+        createJob({ messageId: 1, mediaType: 'photo', mediaFileId: 'photo:1:1', caption: 'Album' }),
+        createJob({ messageId: 2, mediaType: 'photo', mediaFileId: 'photo:2:2' }),
+      ];
+      const job = createJob({ mediaGroup, mediaGroupId: 'album-1' });
+
+      await sender.send(CHAT_ID, job, '@mychannel');
+
+      const [, calledMedia] = api.sendMediaGroup.mock.calls[0];
+      expect(calledMedia[0].caption).toBe('Album\n\nfrom @mychannel');
+      expect(calledMedia[1].caption).toBeUndefined();
+    });
+
+    it('does not append when sourceLabel is undefined', async () => {
+      const job = createJob({ text: 'Hello' });
+
+      await sender.send(CHAT_ID, job, undefined);
+
+      expect(api.sendMessage).toHaveBeenCalledWith(
+        CHAT_ID,
+        'Hello',
+        { entities: undefined },
+      );
+    });
+
+    it('truncates text to fit within 4096 char limit', async () => {
+      const longText = 'x'.repeat(4090);
+      const job = createJob({ text: longText });
+
+      await sender.send(CHAT_ID, job, '@ch');
+
+      const sentText = api.sendMessage.mock.calls[0][1] as string;
+      expect(sentText.length).toBeLessThanOrEqual(4096);
+      expect(sentText.endsWith('\n\nfrom @ch')).toBe(true);
+    });
+
+    it('truncates caption to fit within 1024 char limit', async () => {
+      const longCaption = 'y'.repeat(1020);
+      const job = createJob({
+        mediaType: 'photo',
+        mediaFileId: 'photo:1:1',
+        caption: longCaption,
+      });
+
+      await sender.send(CHAT_ID, job, '@ch');
+
+      const sentCaption = api.sendPhoto.mock.calls[0][2].caption as string;
+      expect(sentCaption.length).toBeLessThanOrEqual(1024);
+      expect(sentCaption.endsWith('\n\nfrom @ch')).toBe(true);
+    });
+  });
 });

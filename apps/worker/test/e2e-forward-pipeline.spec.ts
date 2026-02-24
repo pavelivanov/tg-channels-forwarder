@@ -90,7 +90,7 @@ describe('E2E: Forward Pipeline', () => {
     expect(mockApi.sendMessage).toHaveBeenCalledOnce();
     expect(mockApi.sendMessage).toHaveBeenCalledWith(
       fixtures.destinationChannelId,
-      job.text,
+      expect.stringContaining(job.text!),
       expect.objectContaining({}),
     );
   });
@@ -135,7 +135,7 @@ describe('E2E: Forward Pipeline', () => {
     expect(mockApi.sendMessage).toHaveBeenCalledTimes(2);
     expect(mockApi.sendMessage).toHaveBeenLastCalledWith(
       fixtures.destinationChannelId,
-      job2.text,
+      expect.stringContaining(job2.text!),
       expect.objectContaining({}),
     );
   });

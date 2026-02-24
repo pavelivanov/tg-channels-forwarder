@@ -47,7 +47,10 @@ function createMockRateLimiter(): RateLimiterService {
   } as unknown as RateLimiterService;
 }
 
-function createMockPrisma(destinationChannelIds: bigint[] = []): PrismaClient {
+function createMockPrisma(
+  destinationChannelIds: bigint[] = [],
+  sourceChannel: { username: string | null; title: string } = { username: 'testchannel', title: 'Test Channel' },
+): PrismaClient {
   const lists = destinationChannelIds.map((id, i) => ({
     id: `list-${String(i)}`,
     destinationChannelId: id,
@@ -55,6 +58,9 @@ function createMockPrisma(destinationChannelIds: bigint[] = []): PrismaClient {
   return {
     subscriptionList: {
       findMany: vi.fn().mockResolvedValue(lists),
+    },
+    sourceChannel: {
+      findFirst: vi.fn().mockResolvedValue(sourceChannel),
     },
   } as unknown as PrismaClient;
 }
@@ -85,7 +91,7 @@ describe('ForwarderService', () => {
   });
 
   describe('T009 [US1]: text message forwarding', () => {
-    it('sends text message to destination with formatting preserved', async () => {
+    it('sends text message to destination with formatting preserved and source label', async () => {
       prisma = createMockPrisma([BigInt(-1001234567890)]);
       service = new ForwarderService(messageSender, prisma, dedupService, rateLimiter, logger);
 
@@ -99,6 +105,7 @@ describe('ForwarderService', () => {
       expect(messageSender.send).toHaveBeenCalledWith(
         Number(BigInt(-1001234567890)),
         job,
+        '@testchannel',
       );
     });
 
@@ -172,8 +179,8 @@ describe('ForwarderService', () => {
       await service.forward(createJob());
 
       expect(messageSender.send).toHaveBeenCalledTimes(2);
-      expect(messageSender.send).toHaveBeenCalledWith(Number(BigInt(-100)), expect.anything());
-      expect(messageSender.send).toHaveBeenCalledWith(Number(BigInt(-200)), expect.anything());
+      expect(messageSender.send).toHaveBeenCalledWith(Number(BigInt(-100)), expect.anything(), '@testchannel');
+      expect(messageSender.send).toHaveBeenCalledWith(Number(BigInt(-200)), expect.anything(), '@testchannel');
     });
   });
 
@@ -259,6 +266,35 @@ describe('ForwarderService', () => {
       await service.forward(createJob());
 
       expect(messageSender.send).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('source channel attribution', () => {
+    it('uses title when username is null', async () => {
+      prisma = createMockPrisma([BigInt(-100)], { username: null, title: 'My Channel' });
+      service = new ForwarderService(messageSender, prisma, dedupService, rateLimiter, logger);
+
+      await service.forward(createJob());
+
+      expect(messageSender.send).toHaveBeenCalledWith(
+        Number(BigInt(-100)),
+        expect.anything(),
+        'My Channel',
+      );
+    });
+
+    it('passes undefined sourceLabel when source channel not found', async () => {
+      prisma = createMockPrisma([BigInt(-100)], null as unknown as { username: string | null; title: string });
+      vi.mocked((prisma as unknown as { sourceChannel: { findFirst: ReturnType<typeof vi.fn> } }).sourceChannel.findFirst).mockResolvedValue(null);
+      service = new ForwarderService(messageSender, prisma, dedupService, rateLimiter, logger);
+
+      await service.forward(createJob());
+
+      expect(messageSender.send).toHaveBeenCalledWith(
+        Number(BigInt(-100)),
+        expect.anything(),
+        undefined,
+      );
     });
   });
 });
